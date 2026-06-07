@@ -1,0 +1,23 @@
+read_comp X, 1, 2
+read_comp 7, 1, 2
+read_comp A, abc, 2
+read_comp A, 1, def
+read_comp A, 1
+read_comp A, 1, 2, 3
+read_comp A
+print_comp X
+print_comp B, extra
+invalid_command
+print_comp
+mult_comp_real A, 1, 2
+add_comp A
+sub_comp A, B, C
+read_comp A,, 1, 2
+read_comp A, 1,, 2
+add_comp A, B,
+mult_comp_real A, 5, 
+read_comp A, 1.5, 2.5
+print_comp A extra text
+add_comp A, A
+mult_comp_img A, 1
+abs_comp A

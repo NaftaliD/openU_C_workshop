@@ -1,0 +1,26 @@
+Hello! This program calculates the sum and absolute difference of any two integers you provide. To end the program press Ctrl+Z then Enter (Windows) or Ctrl+D (Unix/Linux)
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 1 and 3
+Sum and difference calculated using the function:
+Sum: 4
+Difference: 2
+
+Sum and difference calculated using the MACROS:
+Sum: 4
+Difference: 2
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: -1 and 3
+Sum and difference calculated using the function:
+Sum: 2
+Difference: 4
+
+Sum and difference calculated using the MACROS:
+Sum: 2
+Difference: 4
+
+Enter two integers to see their sum and difference (in absolute value): 
+Goodbye! all entered value pairs are:
+1 3
+-1 3

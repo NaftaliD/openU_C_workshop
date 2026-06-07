@@ -1,0 +1,22 @@
+read_comp A, 5, 3
+read_comp B, 2, -1
+invalid_cmd
+print_comp A
+print_comp Z
+add_comp A, B
+add_comp
+mult_comp_real A, 2
+mult_comp_real B, abc
+sub_comp A, B, C
+read_comp C, 1.5, 2.5
+print_comp C
+mult_comp_img C, 2
+abs_comp C
+mult_comp_comp A, B
+mult_comp_comp
+add_comp A, B, C
+read_comp D,, 1, 2
+read_comp E, 1, 2
+print_comp E
+sub_comp E, A
+stop

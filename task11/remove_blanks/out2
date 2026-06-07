@@ -1,0 +1,7 @@
+Hello, please enter a string to be cleaned of all spaces!
+You entered:
+ "0000000"
+The string as received by the function:
+ "0000000"
+The string at the end of the function:
+ "0000000"

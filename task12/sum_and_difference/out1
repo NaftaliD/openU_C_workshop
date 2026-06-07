@@ -1,0 +1,70 @@
+Hello! This program calculates the sum and absolute difference of any two integers you provide. To end the program press Ctrl+Z then Enter (Windows) or Ctrl+D (Unix/Linux)
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 4 and 5
+Sum and difference calculated using the function:
+Sum: 9
+Difference: 1
+
+Sum and difference calculated using the MACROS:
+Sum: 9
+Difference: 1
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 8 and 2
+Sum and difference calculated using the function:
+Sum: 10
+Difference: 6
+
+Sum and difference calculated using the MACROS:
+Sum: 10
+Difference: 6
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 9 and 9
+Sum and difference calculated using the function:
+Sum: 18
+Difference: 0
+
+Sum and difference calculated using the MACROS:
+Sum: 18
+Difference: 0
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 6 and -8
+Sum and difference calculated using the function:
+Sum: -2
+Difference: 14
+
+Sum and difference calculated using the MACROS:
+Sum: -2
+Difference: 14
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: -3 and -4
+Sum and difference calculated using the function:
+Sum: -7
+Difference: 1
+
+Sum and difference calculated using the MACROS:
+Sum: -7
+Difference: 1
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: -20 and 88
+Sum and difference calculated using the function:
+Sum: 68
+Difference: 108
+
+Sum and difference calculated using the MACROS:
+Sum: 68
+Difference: 108
+
+Enter two integers to see their sum and difference (in absolute value): 
+Goodbye! all entered value pairs are:
+4 5
+8 2
+9 9
+6 -8
+-3 -4
+-20 88

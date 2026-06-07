@@ -1,13 +1,26 @@
 CC = gcc
-CFLAGS = -pedantic -ansi -Wall -std=c90
-TARGET = on_turn
+CFLAGS = -pedantic -ansi -Wall -std=c90 -g
+EXECUTABLE = on_turn
 
-all: $(TARGET)
+SOURCES = on_turn.c
 
-$(TARGET): on_turn.c
-	$(CC) $(CFLAGS) -o $(TARGET) on_turn.c
+# Object files
+OBJECTS = $(SOURCES:.c=.o)
 
+# Default target
+all: $(EXECUTABLE)
+
+# Build executable
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJECTS)
+	@echo "Build completed: $(EXECUTABLE)"
+
+# Compile .c files to .o files
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build artifacts
 clean:
-	rm -f $(TARGET)
+	-$(RM) $(OBJECTS) $(EXECUTABLE)
+	@echo "Clean completed"
 
-.PHONY: all clean

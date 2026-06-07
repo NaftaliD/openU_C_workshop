@@ -1,0 +1,7 @@
+Hello, please enter a number to see its binary representation and whether turning the 17th bit changes it!
+inputted number in base 10: 999999999
+inputted number in base 2: 0000000000000000000000000000000000111011100110101100100111111111
+
+checking if turning the 17th bit changes the number: The number changed.
+resulting number in base 10: 1000065535
+resulting number in base 2: 0000000000000000000000000000000000111011100110111100100111111111

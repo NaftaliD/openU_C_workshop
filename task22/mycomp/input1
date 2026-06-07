@@ -1,0 +1,37 @@
+read_comp A, 3.5, 2.0
+read_comp B, 1.0, 1.0
+read_comp C, -2.5, 3.0
+read_comp D, 0, 0
+read_comp E, 5, -5
+read_comp F, 0.1, 0.2
+print_comp A
+print_comp B
+print_comp C
+print_comp D
+print_comp E
+print_comp F
+add_comp A, B
+add_comp C, D
+add_comp E, F
+sub_comp A, B
+sub_comp B, A
+sub_comp D, E
+mult_comp_real A, 2
+mult_comp_real B, 0
+mult_comp_real C, -1
+mult_comp_real E, 0.5
+mult_comp_img A, 2
+mult_comp_img B, -1
+mult_comp_img C, 3
+mult_comp_img F, 1
+mult_comp_comp A, B
+mult_comp_comp B, C
+mult_comp_comp D, E
+mult_comp_comp F, F
+abs_comp A
+abs_comp B
+abs_comp C
+abs_comp D
+abs_comp E
+abs_comp F
+stop

@@ -1,9 +1,18 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define BUFF_SIZE 256
+#define BUFF_SIZE 1024
 
 
+/**
+ * Removes all whitespace characters from a string in-place.
+ * Iterates through the input string character by character, copying only
+ * non-whitespace characters back to the beginning of the string, effectively
+ * removing all spaces, tabs, newlines, and other whitespace.
+ * @param char* str a pointer to the string to be processed
+ * @note Modifies the input string directly
+ * @return void
+ */
 void remove_blanks(char *str){
     char *src = str, *dst = str;
     printf("The string as received by the function:\n \"%s\"\n", str);
@@ -19,10 +28,12 @@ void remove_blanks(char *str){
 
 int main(){
     char input[BUFF_SIZE];
+    char format_str[20];
 
     printf("Hello, please enter a string to be cleaned of all spaces!\n");
 
-    scanf("%255[^\n]", input); /* Read a line of input, up to 255 characters */
+    sprintf(format_str, "%%%d[^\n]", BUFF_SIZE-1); /* Create a format string like "%1024[^\n]" */
+    scanf(format_str, input); /* Read a line of input, up to BUFF_SIZE-1 characters */
      
     printf("You entered:\n \"%s\"\n", input);
 

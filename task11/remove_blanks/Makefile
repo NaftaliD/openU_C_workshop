@@ -1,13 +1,26 @@
 CC = gcc
-CFLAGS = -pedantic -ansi -Wall -std=c90
-TARGET = remove_blanks
+CFLAGS = -pedantic -ansi -Wall -std=c90 -g
+EXECUTABLE = remove_blanks
 
-all: $(TARGET)
+SOURCES = remove_blanks.c
 
-$(TARGET): remove_blanks.c
-	$(CC) $(CFLAGS) -o $(TARGET) remove_blanks.c
+# Object files
+OBJECTS = $(SOURCES:.c=.o)
 
+# Default target
+all: $(EXECUTABLE)
+
+# Build executable
+$(EXECUTABLE): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJECTS)
+	@echo "Build completed: $(EXECUTABLE)"
+
+# Compile .c files to .o files
+%.o: %.c $(HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean build artifacts
 clean:
-	rm -f $(TARGET)
+	-$(RM) $(OBJECTS) $(EXECUTABLE)
+	@echo "Clean completed"
 
-.PHONY: all clean

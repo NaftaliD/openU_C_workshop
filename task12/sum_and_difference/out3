@@ -1,0 +1,63 @@
+Hello! This program calculates the sum and absolute difference of any two integers you provide. To end the program press Ctrl+Z then Enter (Windows) or Ctrl+D (Unix/Linux)
+
+Enter two integers to see their sum and difference (in absolute value): 
+Invalid input. Please enter two integers separated by space.
+Enter two integers to see their sum and difference (in absolute value): 
+Invalid input. Please enter two integers separated by space.
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 5 and 5
+Sum and difference calculated using the function:
+Sum: 10
+Difference: 0
+
+Sum and difference calculated using the MACROS:
+Sum: 10
+Difference: 0
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: -3 and 9
+Sum and difference calculated using the function:
+Sum: 6
+Difference: 12
+
+Sum and difference calculated using the MACROS:
+Sum: 6
+Difference: 12
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: -65 and -23
+Sum and difference calculated using the function:
+Sum: -88
+Difference: 42
+
+Sum and difference calculated using the MACROS:
+Sum: -88
+Difference: 42
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 0 and 0
+Sum and difference calculated using the function:
+Sum: 0
+Difference: 0
+
+Sum and difference calculated using the MACROS:
+Sum: 0
+Difference: 0
+
+Enter two integers to see their sum and difference (in absolute value): 
+You entered: 0 and 1
+Sum and difference calculated using the function:
+Sum: 1
+Difference: 1
+
+Sum and difference calculated using the MACROS:
+Sum: 1
+Difference: 1
+
+Enter two integers to see their sum and difference (in absolute value): 
+Goodbye! all entered value pairs are:
+5 5
+-3 9
+-65 -23
+0 0
+0 1
