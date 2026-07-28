@@ -11,7 +11,7 @@
 #include "macro_table.h"
 #include "logger.h"
 
-MacroTable* MacroTable_create(void)
+MacroTable* createMacroTable(void)
 {
     MacroTable *table = (MacroTable *)malloc(sizeof(MacroTable));
     if (table == NULL) return NULL;
@@ -19,16 +19,16 @@ MacroTable* MacroTable_create(void)
     return table;
 }
 
-int MacroTable_insert(MacroTable *table, const char *name, char *body)
+int insertMacro(MacroTable *table, const char *name, char *body)
 {
     MacroNode *node;
-    
+
     if (table == NULL || name == NULL || body == NULL) {
         return -1;
     }
-    
+
     /* Check if macro already exists using lookup */
-    if (MacroTable_lookup(table, name) != NULL) {
+    if (lookupMacro(table, name) != NULL) {
         return -1;  /* Already defined */
     }
     
@@ -44,7 +44,7 @@ int MacroTable_insert(MacroTable *table, const char *name, char *body)
     return 0;
 }
 
-MacroNode* MacroTable_lookup(MacroTable *table, const char *name)
+MacroNode* lookupMacro(MacroTable *table, const char *name)
 {
     MacroNode *current;
     
@@ -60,7 +60,7 @@ MacroNode* MacroTable_lookup(MacroTable *table, const char *name)
     return NULL;
 }
 
-void MacroTable_destroy(MacroTable *table)
+void destroyMacroTable(MacroTable *table)
 {
     MacroNode *current;
     MacroNode *temp;
@@ -79,7 +79,7 @@ void MacroTable_destroy(MacroTable *table)
     free(table);
 }
 
-char* MacroNode_toString(const MacroNode *node)
+char* macroNodeToString(const MacroNode *node)
 {
     char buffer[4096];
     int pos = 0;
@@ -102,7 +102,7 @@ char* MacroNode_toString(const MacroNode *node)
     return result;
 }
 
-char* MacroTable_toString(const MacroTable *table)
+char* macroTableToString(const MacroTable *table)
 {
     char buffer[8192];
     int pos = 0;
@@ -129,7 +129,7 @@ char* MacroTable_toString(const MacroTable *table)
     
     current = table->head;
     while (current != NULL && pos < sizeof(buffer) - 500) {
-        node_str = MacroNode_toString(current);
+        node_str = macroNodeToString(current);
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s", node_str);
         free(node_str);
         current = current->next;

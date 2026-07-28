@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
     }
     
     /* Initialize debug logger */
-    Logger_init(LOG_FILE_PATH);
-    Logger_log("=== ASSEMBLER START ===\n");
-    Logger_log("Processing %d input file(s)\n", argc - 1);
+    initLogger(LOG_FILE_PATH);
+    logMessage("=== ASSEMBLER START ===\n");
+    logMessage("Processing %d input file(s)\n", argc - 1);
     
     /* Process each provided .as file */
     for (i = 1; i < argc; i++) {
@@ -54,20 +54,20 @@ int main(int argc, char *argv[])
         
         /* Step 1: Macro expansion (pre-assembler) */
         printf("  [1] Running macro processor...\n");
-        Logger_log("\nProcessing file: %s\n", as_filename);
-        status = MacroProcessor_expand(as_filename, am_filename);
+        logMessage("\nProcessing file: %s\n", as_filename);
+        status = expandMacros(as_filename, am_filename);
         
         if (status > 0) {
             fprintf(stderr, "Error: Macro processor failed for %s (found %d error(s))\n", 
                     as_filename, status);
-            Logger_log("FATAL: Macro processor failed with %d error(s)\n", status);
+            logMessage("FATAL: Macro processor failed with %d error(s)\n", status);
             printf("  Skipping file due to errors.\n\n");
             continue;
         }
         
         if (status < 0) {
             fprintf(stderr, "Error: Could not process %s (file I/O error)\n", as_filename);
-            Logger_log("FATAL: I/O error while processing %s\n", as_filename);
+            logMessage("FATAL: I/O error while processing %s\n", as_filename);
             printf("  Skipping file due to I/O error.\n\n");
             continue;
         }
@@ -78,8 +78,8 @@ int main(int argc, char *argv[])
         /* TODO: Step 3: File generation (.ob, .ent, .ext) */
     }
     
-    Logger_log("=== ASSEMBLER COMPLETE ===\n");
-    Logger_destroy();
+    logMessage("=== ASSEMBLER COMPLETE ===\n");
+    closeLogger();
     
     return 0;
 }

@@ -17,14 +17,15 @@ static const char *OPERATION_STRINGS[] = {
     "jmp", "la", "call", "hlt"
 };
 
-static const int OPERATION_COUNT = 28;
+/* Derived from the array itself so it can never drift out of sync again */
+static const int OPERATION_COUNT = sizeof(OPERATION_STRINGS) / sizeof(OPERATION_STRINGS[0]);
 
 /* Directive strings */
 static const char *DIRECTIVE_STRINGS[] = {
     ".entry", ".extern", ".db", ".dw", ".dh", ".asciz"
 };
 
-static const int DIRECTIVE_COUNT = 6;
+static const int DIRECTIVE_COUNT = sizeof(DIRECTIVE_STRINGS) / sizeof(DIRECTIVE_STRINGS[0]);
 
 Operation OperationFromString(const char *str)
 {
@@ -147,6 +148,7 @@ int getFunct(Operation op)
     switch (op) {
         /* R-type: opcode 0 functions */
         case OP_ADD:
+            return 1;
         case OP_SUB:
             return 2;
         case OP_AND:

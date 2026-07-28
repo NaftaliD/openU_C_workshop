@@ -10,31 +10,40 @@
 #include "common.h"
 
 /*
- * StringUtils_trimWhitespace
+ * trimWhitespace
  * Removes leading and trailing whitespace from a string (in-place).
  */
-char* StringUtils_trimWhitespace(char *str);
+char* trimWhitespace(char *str);
 
 /*
- * StringUtils_removeComments
+ * removeComments
  * Removes inline comments (everything after ';') from a line.
  */
-void StringUtils_removeComments(char *str);
+void removeComments(char *str);
 
 /*
- * ValidUtils_isLineTooLong
+ * isLineTooLong
  * Checks if a line exceeds MAX_LINE_LENGTH (80 characters).
  * Returns 1 if too long, 0 if valid.
  */
-int ValidUtils_isLineTooLong(const char *str);
+int isLineTooLong(const char *str);
 
 /*
- * ValidUtils_isReservedWord
+ * isReservedWord
  * Checks if a word is a reserved language word.
  * Reserved: mcro, mcroend, all operations, all directives.
  * Returns 1 if reserved, 0 if valid for macro name.
  */
-int ValidUtils_isReservedWord(const char *word);
+int isReservedWord(const char *word);
+
+/*
+ * isValidSymbolName
+ * Checks a name against the label/macro-name syntax rules
+ * must start with an alphabetic character, followed only by alphanumeric characters, 
+ * and be at most MAX_MACRO_NAME_LENGTH characters long.
+ * Returns 1 if valid, 0 if invalid.
+ */
+int isValidSymbolName(const char *name);
 
 #endif /* UTILS_H */
 

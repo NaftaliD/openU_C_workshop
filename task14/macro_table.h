@@ -22,46 +22,46 @@ typedef struct {
 } MacroTable;
 
 /*
- * MacroTable_create
+ * createMacroTable
  * Allocates and initializes an empty macro table.
  */
-MacroTable* MacroTable_create(void);
+MacroTable* createMacroTable(void);
 
 /*
- * MacroTable_insert
+ * insertMacro
  * Inserts a new macro into the table.
  * Takes ownership of the body string (caller should not free it).
  * Returns 0 on success, -1 if macro already exists.
  */
-int MacroTable_insert(MacroTable *table, const char *name, char *body);
+int insertMacro(MacroTable *table, const char *name, char *body);
 
 /*
- * MacroTable_lookup
+ * lookupMacro
  * Searches for a macro by name.
  * Returns pointer to MacroNode on success, NULL if not found.
  */
-MacroNode* MacroTable_lookup(MacroTable *table, const char *name);
+MacroNode* lookupMacro(MacroTable *table, const char *name);
 
 /*
- * MacroTable_destroy
+ * destroyMacroTable
  * Frees all memory associated with the macro table.
  */
-void MacroTable_destroy(MacroTable *table);
+void destroyMacroTable(MacroTable *table);
 
 /*
- * MacroNode_toString
+ * macroNodeToString
  * Create a string representation of a macro node for debugging.
  * Returns a malloc'd string describing the macro and its contents.
  * Caller must free the returned string.
  */
-char* MacroNode_toString(const MacroNode *node);
+char* macroNodeToString(const MacroNode *node);
 
 /*
- * MacroTable_toString
+ * macroTableToString
  * Create a string representation of the entire macro table for debugging.
  * Returns a malloc'd string describing all macros in the table.
  * Caller must free the returned string.
  */
-char* MacroTable_toString(const MacroTable *table);
+char* macroTableToString(const MacroTable *table);
 
 #endif /* MACRO_TABLE_H */

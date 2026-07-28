@@ -10,7 +10,7 @@
 #include "utils.h"
 #include "common.h"
 
-char* StringUtils_trimWhitespace(char *str)
+char* trimWhitespace(char *str)
 {
     int start;
     int end;
@@ -49,7 +49,7 @@ char* StringUtils_trimWhitespace(char *str)
     return str;
 }
 
-void StringUtils_removeComments(char *str)
+void removeComments(char *str)
 {
     int i;
     
@@ -66,7 +66,7 @@ void StringUtils_removeComments(char *str)
     }
 }
 
-int ValidUtils_isLineTooLong(const char *str)
+int isLineTooLong(const char *str)
 {
     /* MAX_LINE_LENGTH is 80 characters per specification */
     if (str == NULL) {
@@ -76,27 +76,54 @@ int ValidUtils_isLineTooLong(const char *str)
     return strlen(str) > MAX_LINE_LENGTH;
 }
 
-int ValidUtils_isReservedWord(const char *word)
+int isReservedWord(const char *word)
 {
     if (word == NULL || strlen(word) == 0) {
         return 0;
     }
-    
+
     /* Check keywords */
     if (strcmp(word, "mcro") == 0 || strcmp(word, "mcroend") == 0) {
         return 1;
     }
-    
+
     /* Check if it's a valid operation */
     if (OperationFromString(word) != OP_INVALID) {
         return 1;
     }
-    
+
     /* Check if it's a valid directive (with leading dot) */
     if (DirectiveFromString(word) != DIRECTIVE_INVALID) {
         return 1;
     }
-    
+
     return 0;
+}
+
+int isValidSymbolName(const char *name)
+{
+    int i;
+    int len;
+
+    if (name == NULL || name[0] == '\0') {
+        return 0;
+    }
+
+    len = strlen(name);
+    if (len > MAX_MACRO_NAME_LENGTH) {
+        return 0;
+    }
+
+    if (!isalpha((unsigned char)name[0])) {
+        return 0;
+    }
+
+    for (i = 1; i < len; i++) {
+        if (!isalnum((unsigned char)name[i])) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 

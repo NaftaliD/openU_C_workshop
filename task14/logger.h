@@ -8,25 +8,25 @@
 #define LOGGER_H
 
 /*
- * Logger_init
+ * initLogger
  * Initialize the debug logger with a file.
  * Should be called once at program start.
  * If debug mode is disabled, does nothing.
  */
-void Logger_init(const char *filename);
+void initLogger(const char *filename);
 
 /*
- * Logger_log
+ * logMessage
  * Write a formatted message to the debug log (debug mode only).
  * Similar to printf - supports format strings and arguments.
  */
-void Logger_log(const char *format, ...);
+void logMessage(const char *format, ...);
 
 /*
- * Logger_destroy
+ * closeLogger
  * Close and clean up the debug logger.
  * Should be called at program exit.
  */
-void Logger_destroy(void);
+void closeLogger(void);
 
 #endif /* LOGGER_H */

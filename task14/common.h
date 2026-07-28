@@ -22,7 +22,7 @@
 /* Complete Operation enum with all instructions from the ISA */
 typedef enum {
     /* R-type instructions */
-    OP_ADD,        /* opcode: 0, funct: 2 */
+    OP_ADD,        /* opcode: 0, funct: 1 */
     OP_SUB,        /* opcode: 0, funct: 2 */
     OP_AND,        /* opcode: 0, funct: 3 */
     OP_OR,         /* opcode: 0, funct: 4 */

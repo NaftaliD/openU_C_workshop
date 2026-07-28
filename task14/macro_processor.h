@@ -7,6 +7,7 @@
 #ifndef MACRO_PROCESSOR_H
 #define MACRO_PROCESSOR_H
 
+#include "common.h"
 #include "macro_table.h"
 
 /*
@@ -18,8 +19,8 @@ typedef struct {
     FILE *in_fp;
     FILE *out_fp;
     MacroTable *macro_table;
-    char name[31];              /* MAX_MACRO_NAME_LENGTH */
-    char line[81];              /* MAX_LINE_LENGTH + 1 */
+    char name[MAX_MACRO_NAME_LENGTH + 1];
+    char line[MAX_LINE_LENGTH + 1];
     char *macro_body;
     int macro_capacity;
     int macro_length;
@@ -29,33 +30,35 @@ typedef struct {
 } MacroProcessorState;
 
 /*
- * MacroProcessor_expand
+ * expandMacros
  * Reads the input .as file, processes macro definitions and expansions,
  * and writes the expanded code to the output .am file.
- * 
+ *
 
  * Validations:
  * - Macro names cannot be reserved language words
+ * - Macro names must follow label syntax (letter, then alphanumeric, <= MAX_MACRO_NAME_LENGTH chars)
  * - mcro and mcroend lines must have exact syntax (no extra words)
- * 
+ *
  * Returns: error count (0 = success, >0 = number of errors encountered)
  */
-int MacroProcessor_expand(const char *input_file, const char *output_file);
+int expandMacros(const char *input_file, const char *output_file);
 
 /*
- * MacroProcessor_isMcroDefinitionStart
+ * isMcroDefinitionStart
  * Validates "mcro <name>" line format.
- * Must have exactly 2 tokens (no extra words).
+ * Must have exactly 2 tokens (no extra words), and the name must fit in
+ * name_out (MAX_MACRO_NAME_LENGTH characters, checked before copying).
  * Returns 1 if valid, 0 if invalid (fills name_out if valid).
  */
-int MacroProcessor_isMcroDefinitionStart(const char *line, char *name_out);
+int isMcroDefinitionStart(const char *line, char *name_out);
 
 /*
- * MacroProcessor_isMcroDefinitionEnd
+ * isMcroDefinitionEnd
  * Validates "mcroend" line.
  * Must be exactly the word "mcroend", no extra words.
  * Returns 1 if valid, 0 if invalid.
  */
-int MacroProcessor_isMcroDefinitionEnd(const char *line);
+int isMcroDefinitionEnd(const char *line);
 
 #endif /* MACRO_PROCESSOR_H */
