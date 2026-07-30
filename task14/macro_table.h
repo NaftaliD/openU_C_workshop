@@ -21,46 +21,49 @@ typedef struct {
     MacroNode *head;
 } MacroTable;
 
-/*
- * createMacroTable
+/**
  * Allocates and initializes an empty macro table.
+ * @return the new table, or NULL on allocation failure
  */
 MacroTable* createMacroTable(void);
 
-/*
- * insertMacro
- * Inserts a new macro into the table.
- * Takes ownership of the body string (caller should not free it).
- * Returns 0 on success, -1 if macro already exists.
+/**
+ * Inserts a new macro into the table. Takes ownership of body (caller
+ * should not free it).
+ * @param table the macro table
+ * @param name the macro's name
+ * @param body the macro's body, as a single string with embedded newlines
+ * @return 0 on success, -1 if a macro with that name already exists
  */
 int insertMacro(MacroTable *table, const char *name, char *body);
 
-/*
- * lookupMacro
+/**
  * Searches for a macro by name.
- * Returns pointer to MacroNode on success, NULL if not found.
+ * @param table the macro table
+ * @param name the macro name to look up
+ * @return the matching MacroNode, or NULL if not found
  */
 MacroNode* lookupMacro(MacroTable *table, const char *name);
 
-/*
- * destroyMacroTable
- * Frees all memory associated with the macro table.
+/**
+ * Frees every macro node's body, every node, and the table itself.
+ * @param table the macro table to free
  */
 void destroyMacroTable(MacroTable *table);
 
-/*
- * macroNodeToString
- * Create a string representation of a macro node for debugging.
- * Returns a malloc'd string describing the macro and its contents.
- * Caller must free the returned string.
+/**
+ * Builds a debug string describing one macro node. Caller must free the
+ * returned string.
+ * @param node the macro node to describe
+ * @return a malloc'd description string
  */
 char* macroNodeToString(const MacroNode *node);
 
-/*
- * macroTableToString
- * Create a string representation of the entire macro table for debugging.
- * Returns a malloc'd string describing all macros in the table.
- * Caller must free the returned string.
+/**
+ * Builds a debug string describing every macro in the table. Caller must
+ * free the returned string.
+ * @param table the macro table to describe
+ * @return a malloc'd description string
  */
 char* macroTableToString(const MacroTable *table);
 

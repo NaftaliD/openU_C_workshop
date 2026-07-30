@@ -19,6 +19,12 @@
 #define MAX_MACRO_NAME_LENGTH 31
 #define MAX_FILENAME_LENGTH 256
 
+#define MAX_LABEL_LENGTH 31       /* distinct from MAX_MACRO_NAME_LENGTH though equal */
+#define MAX_OPERANDS 3
+#define ADDRESS_UNASSIGNED (-1)   /* 0 is a valid DC value, so can't mean "unset" */
+#define MAX_ERROR_MESSAGE_LENGTH 128
+#define INITIAL_LIST_CAPACITY 16  /* growable-array lists start here, double on growth */
+
 /* Complete Operation enum with all instructions from the ISA */
 typedef enum {
     /* R-type instructions */
@@ -67,54 +73,52 @@ typedef enum {
     DIRECTIVE_INVALID = -1
 } Directive;
 
-/* Operation parsing and encoding functions */
-
 /**
- * OperationFromString - Convert a string to an Operation enum
- * @str: The string to convert (e.g., "add", "addi", "jmp")
- * Returns: The Operation enum value, or OP_INVALID if not recognized
+ * Converts an opcode name to its Operation enum value.
+ * @param str the string to convert (e.g., "add", "addi", "jmp")
+ * @return the Operation value, or OP_INVALID if not recognized
  */
-Operation OperationFromString(const char *str);
+Operation operationFromString(const char *str);
 
 /**
- * OperationToString - Convert an Operation enum to its string representation
- * @op: The operation enum value
- * Returns: The operation name as a string, or NULL if invalid
+ * Converts an Operation enum value to its opcode name.
+ * @param op the operation enum value
+ * @return the operation name, or NULL if invalid
  */
-const char* OperationToString(Operation op);
+const char* operationToString(Operation op);
 
 /**
- * DirectiveFromString - Convert a string to a Directive enum
- * @str: The string to convert (must include leading dot, e.g., ".entry")
- * Returns: The Directive enum value, or DIRECTIVE_INVALID if not recognized
+ * Converts a directive name to its Directive enum value.
+ * @param str the string to convert, including the leading dot (e.g., ".entry")
+ * @return the Directive value, or DIRECTIVE_INVALID if not recognized
  */
-Directive DirectiveFromString(const char *str);
+Directive directiveFromString(const char *str);
 
 /**
- * DirectiveToString - Convert a Directive enum to its string representation
- * @directive: The directive enum value
- * Returns: The directive name as a string (with leading dot), or NULL if invalid
+ * Converts a Directive enum value to its directive name.
+ * @param directive the directive enum value
+ * @return the directive name with its leading dot, or NULL if invalid
  */
-const char* DirectiveToString(Directive directive);
+const char* directiveToString(Directive directive);
 
 /**
- * getOpcode - Get the opcode value for an Operation
- * @op: The operation enum member
- * Returns: The opcode value (0-63), or -1 if invalid
+ * Looks up the opcode field value for an operation.
+ * @param op the operation enum value
+ * @return the opcode (0-63), or -1 if invalid
  */
 int getOpcode(Operation op);
 
 /**
- * getFunct - Get the funct value for an Operation (R-type only)
- * @op: The operation enum member
- * Returns: The funct value (1-5 for R-type), 0 for I/J-type, or -1 if invalid
+ * Looks up the funct field value for an operation.
+ * @param op the operation enum value
+ * @return the funct value for R-type operations, 0 for I/J-type, -1 if invalid
  */
 int getFunct(Operation op);
 
 /**
- * getOperationType - Get the operation type for an Operation
- * @op: The operation enum member
- * Returns: 'R', 'I', or 'J', or '\0' if invalid
+ * Looks up which instruction format an operation uses.
+ * @param op the operation enum value
+ * @return 'R', 'I', or 'J', or '\0' if invalid
  */
 char getOperationType(Operation op);
 

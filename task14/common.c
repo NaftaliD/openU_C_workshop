@@ -27,7 +27,7 @@ static const char *DIRECTIVE_STRINGS[] = {
 
 static const int DIRECTIVE_COUNT = sizeof(DIRECTIVE_STRINGS) / sizeof(DIRECTIVE_STRINGS[0]);
 
-Operation OperationFromString(const char *str)
+Operation operationFromString(const char *str)
 {
     int i;
     
@@ -44,7 +44,7 @@ Operation OperationFromString(const char *str)
     return OP_INVALID;
 }
 
-const char* OperationToString(Operation op)
+const char* operationToString(Operation op)
 {
     if (op < 0 || op >= OPERATION_COUNT) {
         return NULL;
@@ -53,7 +53,7 @@ const char* OperationToString(Operation op)
     return OPERATION_STRINGS[op];
 }
 
-Directive DirectiveFromString(const char *str)
+Directive directiveFromString(const char *str)
 {
     int i;
     
@@ -70,7 +70,7 @@ Directive DirectiveFromString(const char *str)
     return DIRECTIVE_INVALID;
 }
 
-const char* DirectiveToString(Directive directive)
+const char* directiveToString(Directive directive)
 {
     if (directive < 0 || directive >= DIRECTIVE_COUNT) {
         return NULL;

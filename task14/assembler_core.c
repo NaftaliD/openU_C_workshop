@@ -12,6 +12,15 @@
 #include "macro_processor.h"
 #include "logger.h"
 
+/**
+ * Program entry point. Processes each given .as file independently through
+ * the assembler pipeline (currently: macro expansion; Pass One/Two and
+ * output-file generation are not wired in yet). An error in one file does
+ * not stop the others from being processed.
+ * @param argc number of command-line arguments (including program name)
+ * @param argv argument vector: argv[1..] are .as file paths
+ * @return 0 on completion, 1 if no input files were given
+ */
 int main(int argc, char *argv[])
 {
     int i;

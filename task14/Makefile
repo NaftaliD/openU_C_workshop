@@ -8,9 +8,14 @@ CFLAGS = -pedantic -ansi -Wall -std=c90 -g
 EXECUTABLE = assembler
 OBJDIR = build_artifacts
 
-# Core source files (macro pass only, for now)
-SOURCES = assembler_core.c utils.c common.c macro_processor.c macro_table.c logger.c
-HEADERS = common.h utils.h macro_processor.h macro_table.h logger.h
+# Core source files (macro pass, plus Pass One's data structures -- the
+# Pass One driver/parsing algorithm itself is not wired in yet)
+SOURCES = assembler_core.c utils.c common.c macro_processor.c macro_table.c logger.c \
+          pointer_list.c operation_line.c data_directive_line.c entry_list.c \
+          error_list.c symbol_table.c pass_one.c
+HEADERS = common.h utils.h macro_processor.h macro_table.h logger.h \
+          pointer_list.h operation_line.h data_directive_line.h entry_list.h \
+          error_list.h symbol_table.h pass_one.h
 
 # Object files - kept out of the source tree in build_artifacts/; the
 # executable itself stays at the top level since it's the deliverable.

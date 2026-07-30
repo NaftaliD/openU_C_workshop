@@ -9,41 +9,64 @@
 #include <string.h>
 #include "common.h"
 
-/*
- * trimWhitespace
- * Removes leading and trailing whitespace from a string (in-place).
+/**
+ * Removes leading and trailing whitespace from a string, in place.
+ * @param str the string to trim
+ * @return str, for convenient chaining
  */
 char* trimWhitespace(char *str);
 
-/*
- * removeComments
- * Removes inline comments (everything after ';') from a line.
+/**
+ * Truncates a line at the first ';' comment marker, in place.
+ * @param str the line to strip
  */
 void removeComments(char *str);
 
-/*
- * isLineTooLong
- * Checks if a line exceeds MAX_LINE_LENGTH (80 characters).
- * Returns 1 if too long, 0 if valid.
+/**
+ * Checks whether a line exceeds MAX_LINE_LENGTH.
+ * @param str the line to check
+ * @return 1 if too long, 0 otherwise
  */
 int isLineTooLong(const char *str);
 
-/*
- * isReservedWord
- * Checks if a word is a reserved language word.
- * Reserved: mcro, mcroend, all operations, all directives.
- * Returns 1 if reserved, 0 if valid for macro name.
+/**
+ * Checks whether a word is a reserved language word (mcro, mcroend, any
+ * operation name, or any directive name).
+ * @param word the word to check
+ * @return 1 if reserved, 0 otherwise
  */
 int isReservedWord(const char *word);
 
-/*
- * isValidSymbolName
- * Checks a name against the label/macro-name syntax rules
- * must start with an alphabetic character, followed only by alphanumeric characters, 
- * and be at most MAX_MACRO_NAME_LENGTH characters long.
- * Returns 1 if valid, 0 if invalid.
+/**
+ * Checks a name against label/macro-name syntax: must start with a letter,
+ * contain only letters/digits after that, and be at most
+ * MAX_MACRO_NAME_LENGTH characters long.
+ * @param name the name to validate
+ * @return 1 if valid, 0 otherwise
  */
 int isValidSymbolName(const char *name);
+
+/**
+ * Allocates and returns a copy of str (C90 has no strdup). Caller must free
+ * the returned string.
+ * @param str the string to copy
+ * @return a malloc'd copy, or NULL if str is NULL or on allocation failure
+ */
+char* duplicateString(const char *str);
+
+/**
+ * Extracts the first token from str, ending at any character in delimiters
+ * or at the end of the string. Does not modify str. An empty leading token
+ * (str starts with a delimiter, or is empty) yields an empty string, not
+ * NULL -- NULL means allocation failure, not "no token".
+ * @param str the string to scan
+ * @param delimiters characters that end the token
+ * @param rest_out if non-NULL, receives a pointer into str at the delimiter
+ *                 that ended the token (or at the terminating '\0')
+ * @return a malloc'd copy of the token (caller must free), or NULL on
+ *         allocation failure
+ */
+char* getFirstToken(const char *str, const char *delimiters, const char **rest_out);
 
 #endif /* UTILS_H */
 

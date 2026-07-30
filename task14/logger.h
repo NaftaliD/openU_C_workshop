@@ -7,25 +7,21 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-/*
- * initLogger
- * Initialize the debug logger with a file.
- * Should be called once at program start.
- * If debug mode is disabled, does nothing.
+/**
+ * Opens the debug log file. Call once at program start. Does nothing if
+ * IS_DEBUG is 0.
+ * @param filename path to the log file
  */
 void initLogger(const char *filename);
 
-/*
- * logMessage
- * Write a formatted message to the debug log (debug mode only).
- * Similar to printf - supports format strings and arguments.
+/**
+ * Writes a formatted message to the debug log (debug mode only), like printf.
+ * @param format printf-style format string
  */
 void logMessage(const char *format, ...);
 
-/*
- * closeLogger
- * Close and clean up the debug logger.
- * Should be called at program exit.
+/**
+ * Closes the debug log file. Call once at program exit.
  */
 void closeLogger(void);
 

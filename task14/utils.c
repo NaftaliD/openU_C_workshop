@@ -68,12 +68,24 @@ void removeComments(char *str)
 
 int isLineTooLong(const char *str)
 {
-    /* MAX_LINE_LENGTH is 80 characters per specification */
+    size_t len;
+
     if (str == NULL) {
         return 0;
     }
-    
-    return strlen(str) > MAX_LINE_LENGTH;
+
+    len = strlen(str);
+
+    /* A captured trailing newline doesn't count toward the limit -- and its
+     * presence also proves the whole line already fit within the caller's
+     * read buffer, so it's within range by construction. Only the length
+     * matters when no newline was captured: either a truncated too-long
+     * line, or a final line at EOF with no trailing newline at all. */
+    if (len > 0 && str[len - 1] == '\n') {
+        return 0;
+    }
+
+    return len > MAX_LINE_LENGTH;
 }
 
 int isReservedWord(const char *word)
@@ -88,12 +100,12 @@ int isReservedWord(const char *word)
     }
 
     /* Check if it's a valid operation */
-    if (OperationFromString(word) != OP_INVALID) {
+    if (operationFromString(word) != OP_INVALID) {
         return 1;
     }
 
     /* Check if it's a valid directive (with leading dot) */
-    if (DirectiveFromString(word) != DIRECTIVE_INVALID) {
+    if (directiveFromString(word) != DIRECTIVE_INVALID) {
         return 1;
     }
 
@@ -125,5 +137,52 @@ int isValidSymbolName(const char *name)
     }
 
     return 1;
+}
+
+char* duplicateString(const char *str)
+{
+    char *copy;
+    size_t len;
+
+    if (str == NULL) {
+        return NULL;
+    }
+
+    len = strlen(str);
+    copy = (char *)malloc(len + 1);
+    if (copy == NULL) {
+        return NULL;
+    }
+
+    strcpy(copy, str);
+    return copy;
+}
+
+char* getFirstToken(const char *str, const char *delimiters, const char **rest_out)
+{
+    int i;
+    char *token;
+
+    if (str == NULL || delimiters == NULL) {
+        return NULL;
+    }
+
+    i = 0;
+    while (str[i] != '\0' && strchr(delimiters, str[i]) == NULL) {
+        i++;
+    }
+
+    token = (char *)malloc(i + 1);
+    if (token == NULL) {
+        return NULL;
+    }
+    strncpy(token, str, i);
+    token[i] = '\0';
+
+    if (rest_out != NULL) {
+        *rest_out = &str[i];
+    }
+
+    return token;
 }
 

@@ -20,7 +20,10 @@ typedef struct {
     FILE *out_fp;
     MacroTable *macro_table;
     char name[MAX_MACRO_NAME_LENGTH + 1];
-    char line[MAX_LINE_LENGTH + 1];
+    char line[MAX_LINE_LENGTH + 2]; /* +2, not +1: one extra byte of read
+                                        headroom so a too-long line can be
+                                        told apart from one exactly at the
+                                        limit (see isLineTooLong) */
     char *macro_body;
     int macro_capacity;
     int macro_length;
@@ -29,35 +32,30 @@ typedef struct {
     int in_macro;
 } MacroProcessorState;
 
-/*
- * expandMacros
- * Reads the input .as file, processes macro definitions and expansions,
- * and writes the expanded code to the output .am file.
- *
-
- * Validations:
- * - Macro names cannot be reserved language words
- * - Macro names must follow label syntax (letter, then alphanumeric, <= MAX_MACRO_NAME_LENGTH chars)
- * - mcro and mcroend lines must have exact syntax (no extra words)
- *
- * Returns: error count (0 = success, >0 = number of errors encountered)
+/**
+ * Reads input_file, expands all mcro/mcroend definitions and invocations,
+ * and writes the result to output_file. Validates that macro names aren't
+ * reserved words, follow label syntax, and that mcro/mcroend lines have no
+ * extra words.
+ * @param input_file path to the source .as file
+ * @param output_file path to write the expanded .am file
+ * @return 0 on success, otherwise the number of errors found
  */
 int expandMacros(const char *input_file, const char *output_file);
 
-/*
- * isMcroDefinitionStart
- * Validates "mcro <name>" line format.
- * Must have exactly 2 tokens (no extra words), and the name must fit in
- * name_out (MAX_MACRO_NAME_LENGTH characters, checked before copying).
- * Returns 1 if valid, 0 if invalid (fills name_out if valid).
+/**
+ * Validates a "mcro <name>" line: exactly two tokens, name short enough to
+ * fit name_out.
+ * @param line the line to validate
+ * @param name_out receives the macro name if the line is valid
+ * @return 1 if valid, 0 otherwise
  */
 int isMcroDefinitionStart(const char *line, char *name_out);
 
-/*
- * isMcroDefinitionEnd
- * Validates "mcroend" line.
- * Must be exactly the word "mcroend", no extra words.
- * Returns 1 if valid, 0 if invalid.
+/**
+ * Validates a "mcroend" line: exactly the word "mcroend", nothing else.
+ * @param line the line to validate
+ * @return 1 if valid, 0 otherwise
  */
 int isMcroDefinitionEnd(const char *line);
 

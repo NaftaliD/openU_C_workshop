@@ -9,6 +9,13 @@ The spec never gives syntax rules for macro names, only that they can't be a
 reserved word. We apply the same rule as label names: must start with a
 letter, then letters/digits only, no underscores, max 31 characters.
 
+## Line length
+
+The 80-character max line length is validated in the pre-assembler
+(`macro_processor.c`), on each raw line as it's read from the `.as` file --
+not deferred to Pass One. By the time Pass One reads the `.am` file, every
+line is already guaranteed to be within the limit.
+
 ## Building
 
 `make` puts object files in `build_artifacts/` and leaves `assembler` (the
