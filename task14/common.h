@@ -19,6 +19,10 @@
 #define MAX_MACRO_NAME_LENGTH 31
 #define MAX_FILENAME_LENGTH 256
 
+/* The read buffer needs 2 bytes of headroom beyond MAX_LINE_LENGTH so a
+ * line exactly at the limit can be told apart from one over it  */
+#define LINE_BUFFER_SIZE (MAX_LINE_LENGTH + 2)
+
 #define MAX_LABEL_LENGTH 31       /* distinct from MAX_MACRO_NAME_LENGTH though equal */
 #define MAX_OPERANDS 3
 #define ADDRESS_UNASSIGNED (-1)   /* 0 is a valid DC value, so can't mean "unset" */

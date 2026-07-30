@@ -33,7 +33,8 @@ EntryList* createEntryList(void);
  * @param list the entry list
  * @param line_number source line of the .entry directive
  * @param symbol_name the symbol it names
- * @return 0 on success, -1 on allocation failure
+ * @return 0 on success, -1 on allocation failure or if symbol_name is longer
+ *         than MAX_LABEL_LENGTH
  */
 int appendEntry(EntryList *list, int line_number, const char *symbol_name);
 
@@ -42,5 +43,13 @@ int appendEntry(EntryList *list, int line_number, const char *symbol_name);
  * @param list the entry list to free
  */
 void destroyEntryList(EntryList *list);
+
+/**
+ * Builds a debug string describing every deferred .entry record. Caller
+ * must free the returned string.
+ * @param list the entry list to describe
+ * @return a malloc'd description string
+ */
+char* entryListToString(const EntryList *list);
 
 #endif /* ENTRY_LIST_H */

@@ -37,14 +37,14 @@ int main(int argc, char *argv[])
     
     /* Initialize debug logger */
     initLogger(LOG_FILE_PATH);
-    logMessage("=== ASSEMBLER START ===\n");
-    logMessage("Processing %d input file(s)\n", argc - 1);
-    
+    logMessage(LOG_DEBUG, "=== ASSEMBLER START ===\n");
+    logMessage(LOG_DEBUG, "Processing %d input file(s)\n", argc - 1);
+
     /* Process each provided .as file */
     for (i = 1; i < argc; i++) {
         as_filename = argv[i];
-        
-        printf("Processing %s...\n", as_filename);
+
+        logMessage(LOG_INFO, "Processing %s...\n", as_filename);
         
         /* TODO: Validate that filename ends with .as extension */
         
@@ -62,32 +62,30 @@ int main(int argc, char *argv[])
         }
         
         /* Step 1: Macro expansion (pre-assembler) */
-        printf("  [1] Running macro processor...\n");
-        logMessage("\nProcessing file: %s\n", as_filename);
+        logMessage(LOG_INFO, "  [1] Running macro processor...\n");
+        logMessage(LOG_DEBUG, "\nProcessing file: %s\n", as_filename);
         status = expandMacros(as_filename, am_filename);
-        
+
         if (status > 0) {
-            fprintf(stderr, "Error: Macro processor failed for %s (found %d error(s))\n", 
-                    as_filename, status);
-            logMessage("FATAL: Macro processor failed with %d error(s)\n", status);
-            printf("  Skipping file due to errors.\n\n");
+            logMessage(LOG_ERROR, "Error: Macro processor failed for %s (found %d error(s))\n",
+                       as_filename, status);
+            logMessage(LOG_INFO, "  Skipping file due to errors.\n\n");
             continue;
         }
-        
+
         if (status < 0) {
-            fprintf(stderr, "Error: Could not process %s (file I/O error)\n", as_filename);
-            logMessage("FATAL: I/O error while processing %s\n", as_filename);
-            printf("  Skipping file due to I/O error.\n\n");
+            logMessage(LOG_ERROR, "Error: Could not process %s (file I/O error)\n", as_filename);
+            logMessage(LOG_INFO, "  Skipping file due to I/O error.\n\n");
             continue;
         }
-        
-        printf("  Macro expansion successful. Output: %s\n", am_filename);
-        
+
+        logMessage(LOG_INFO, "  Macro expansion successful. Output: %s\n", am_filename);
+
         /* TODO: Step 2: Pass One & Two */
         /* TODO: Step 3: File generation (.ob, .ent, .ext) */
     }
-    
-    logMessage("=== ASSEMBLER COMPLETE ===\n");
+
+    logMessage(LOG_DEBUG, "=== ASSEMBLER COMPLETE ===\n");
     closeLogger();
     
     return 0;

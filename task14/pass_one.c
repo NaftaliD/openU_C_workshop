@@ -130,11 +130,10 @@ LineType parseLine(const char *raw_line, int line_number,
     Directive directive;
     Operation operation;
 
+    /* Return value unused: the error's already in errors, which gates output. */
     extractLabel(raw_line, out_label, &rest, line_number, errors);
 
-    while (*rest == ' ' || *rest == '\t') {
-        rest++;
-    }
+    rest = skipWhitespace(rest);
 
     if (*rest == '\0') {
         return LINE_TYPE_BLANK;
@@ -149,9 +148,7 @@ LineType parseLine(const char *raw_line, int line_number,
         return LINE_TYPE_BLANK;
     }
 
-    while (*rest == ' ' || *rest == '\t') {
-        rest++;
-    }
+    rest = skipWhitespace(rest);
 
     /* Per the language spec, a leading '.' is what makes a line a directive
      * -- not whether the name that follows is recognized. That has to be
@@ -175,7 +172,7 @@ LineType parseLine(const char *raw_line, int line_number,
                 return LINE_TYPE_BLANK;
 
             default: /* DIRECTIVE_DB / DIRECTIVE_DW / DIRECTIVE_DH / DIRECTIVE_ASCIZ */
-                out->directive = (DataDirectiveNode *)malloc(sizeof(DataDirectiveNode));
+                out->directive = createDataDirectiveNode();
                 if (out->directive == NULL) {
                     appendError(errors, line_number, "Out of memory");
                     return LINE_TYPE_BLANK;
@@ -196,7 +193,7 @@ LineType parseLine(const char *raw_line, int line_number,
         return LINE_TYPE_BLANK;
     }
 
-    out->operation = (OperationNode *)malloc(sizeof(OperationNode));
+    out->operation = createOperationNode();
     if (out->operation == NULL) {
         appendError(errors, line_number, "Out of memory");
         return LINE_TYPE_BLANK;

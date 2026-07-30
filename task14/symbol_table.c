@@ -8,6 +8,7 @@
 #include <string.h>
 #include "common.h"
 #include "symbol_table.h"
+#include "growable_array.h"
 
 SymbolTable* createSymbolTable(void)
 {
@@ -15,33 +16,41 @@ SymbolTable* createSymbolTable(void)
     if (table == NULL) {
         return NULL;
     }
-    table->head = NULL;
+
+    table->items = (SymbolNode *)malloc(sizeof(SymbolNode) * INITIAL_LIST_CAPACITY);
+    if (table->items == NULL) {
+        free(table);
+        return NULL;
+    }
+
+    table->count = 0;
+    table->capacity = INITIAL_LIST_CAPACITY;
     return table;
 }
 
 SymbolNode* lookupSymbol(SymbolTable *table, const char *name)
 {
-    SymbolNode *current;
+    int i;
 
     if (table == NULL || name == NULL) {
         return NULL;
     }
 
-    current = table->head;
-    while (current != NULL) {
-        if (strcmp(current->name, name) == 0) {
-            return current;
+    for (i = 0; i < table->count; i++) {
+        if (strcmp(table->items[i].name, name) == 0) {
+            return &table->items[i];
         }
-        current = current->next;
     }
     return NULL;
 }
 
 int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type)
 {
-    SymbolNode *node;
-
     if (table == NULL || name == NULL) {
+        return -1;
+    }
+
+    if (strlen(name) > MAX_LABEL_LENGTH) {
         return -1;
     }
 
@@ -49,17 +58,17 @@ int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType typ
         return -1;
     }
 
-    node = (SymbolNode *)malloc(sizeof(SymbolNode));
-    if (node == NULL) {
-        return -1;
+    if (table->count == table->capacity) {
+        if (!growArray((void **)&table->items, &table->capacity, sizeof(SymbolNode))) {
+            return -1;
+        }
     }
 
-    strcpy(node->name, name);
-    node->value = value;
-    node->type = type;
-    node->is_entry = 0;
-    node->next = table->head;
-    table->head = node;
+    strcpy(table->items[table->count].name, name);
+    table->items[table->count].value = value;
+    table->items[table->count].type = type;
+    table->items[table->count].is_entry = 0;
+    table->count++;
 
     return 0;
 }
@@ -86,35 +95,71 @@ int markEntry(SymbolTable *table, const char *name)
 
 void relocateDataSymbols(SymbolTable *table, int icf)
 {
-    SymbolNode *current;
+    int i;
 
     if (table == NULL) {
         return;
     }
 
-    current = table->head;
-    while (current != NULL) {
-        if (current->type == SYMBOL_TYPE_DATA) {
-            current->value += icf;
+    for (i = 0; i < table->count; i++) {
+        if (table->items[i].type == SYMBOL_TYPE_DATA) {
+            table->items[i].value += icf;
         }
-        current = current->next;
     }
 }
 
 void destroySymbolTable(SymbolTable *table)
 {
-    SymbolNode *current;
-    SymbolNode *temp;
-
     if (table == NULL) {
         return;
     }
 
-    current = table->head;
-    while (current != NULL) {
-        temp = current->next;
-        free(current);
-        current = temp;
-    }
+    free(table->items);
     free(table);
+}
+
+/**
+ * @param type a symbol's origin
+ * @return "code", "data", or "external"
+ */
+static const char* symbolTypeToString(SymbolType type)
+{
+    switch (type) {
+        case SYMBOL_TYPE_CODE:     return "code";
+        case SYMBOL_TYPE_DATA:     return "data";
+        case SYMBOL_TYPE_EXTERNAL: return "external";
+        default:                   return "?";
+    }
+}
+
+char* symbolTableToString(const SymbolTable *table)
+{
+    char buffer[8192];
+    int pos = 0;
+    int i;
+    char *result;
+
+    if (table == NULL) {
+        result = (char *)malloc(30);
+        if (result != NULL) {
+            strcpy(result, "[SymbolTable: NULL]\n");
+        }
+        return result;
+    }
+
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos,
+                    "[SymbolTable: %d symbol(s)]\n", table->count);
+
+    for (i = 0; i < table->count && pos < (int)sizeof(buffer) - 200; i++) {
+        pos += snprintf(buffer + pos, sizeof(buffer) - pos,
+                        "  %s = %d (%s%s)\n", table->items[i].name,
+                        table->items[i].value, symbolTypeToString(table->items[i].type),
+                        table->items[i].is_entry ? ", entry" : "");
+    }
+
+    result = (char *)malloc(strlen(buffer) + 1);
+    if (result != NULL) {
+        strcpy(result, buffer);
+    }
+    return result;
 }

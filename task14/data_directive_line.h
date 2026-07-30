@@ -2,15 +2,14 @@
  * data_directive_line.h
  * A single parsed data-directive statement (.db/.dw/.dh/.asciz). .entry and
  * .extern are handled elsewhere (entry_list.h, symbol_table.h) -- neither
- * allocates image bytes, so neither fits this shape. The list of these is a
- * thin wrapper around the generic PointerList (see pointer_list.h).
+ * allocates image bytes, so neither fits this shape. Also a growable list of
+ * these (backed by growable_array.h's shared growth primitive).
  */
 
 #ifndef DATA_DIRECTIVE_LINE_H
 #define DATA_DIRECTIVE_LINE_H
 
 #include "common.h"
-#include "pointer_list.h"
 
 /* One fully-parsed data-directive statement */
 typedef struct {
@@ -23,7 +22,12 @@ typedef struct {
     int       has_error;
 } DataDirectiveNode;
 
-typedef PointerList DataDirectiveList;
+/* Growable array of pointers, in file order */
+typedef struct {
+    DataDirectiveNode **items;
+    int count;
+    int capacity;
+} DataDirectiveList;
 
 /**
  * Looks up the per-value byte width for a data directive.
@@ -31,6 +35,14 @@ typedef PointerList DataDirectiveList;
  * @return 1 for .db/.asciz, 4 for .dw, 2 for .dh, -1 if not a data directive
  */
 int getDirectiveByteWidth(Directive directive);
+
+/**
+ * Allocates a DataDirectiveNode. Fields are left uninitialized -- the
+ * caller (parseLine's directive sub-parser) fills in every field
+ * unconditionally.
+ * @return the new node, or NULL on allocation failure
+ */
+DataDirectiveNode* createDataDirectiveNode(void);
 
 /**
  * Allocates and initializes an empty data-directive list.
@@ -51,5 +63,21 @@ int appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node);
  * @param list the data-directive list to free
  */
 void destroyDataDirectiveList(DataDirectiveList *list);
+
+/**
+ * Builds a debug string describing one data-directive node. Caller must
+ * free the returned string.
+ * @param node the node to describe
+ * @return a malloc'd description string
+ */
+char* dataDirectiveNodeToString(const DataDirectiveNode *node);
+
+/**
+ * Builds a debug string describing every node in the list. Caller must free
+ * the returned string.
+ * @param list the data-directive list to describe
+ * @return a malloc'd description string
+ */
+char* dataDirectiveListToString(const DataDirectiveList *list);
 
 #endif /* DATA_DIRECTIVE_LINE_H */

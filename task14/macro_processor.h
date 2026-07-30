@@ -20,10 +20,7 @@ typedef struct {
     FILE *out_fp;
     MacroTable *macro_table;
     char name[MAX_MACRO_NAME_LENGTH + 1];
-    char line[MAX_LINE_LENGTH + 2]; /* +2, not +1: one extra byte of read
-                                        headroom so a too-long line can be
-                                        told apart from one exactly at the
-                                        limit (see isLineTooLong) */
+    char line[LINE_BUFFER_SIZE];
     char *macro_body;
     int macro_capacity;
     int macro_length;

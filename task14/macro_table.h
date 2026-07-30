@@ -29,11 +29,12 @@ MacroTable* createMacroTable(void);
 
 /**
  * Inserts a new macro into the table. Takes ownership of body (caller
- * should not free it).
+ * should not free it) only on success.
  * @param table the macro table
  * @param name the macro's name
  * @param body the macro's body, as a single string with embedded newlines
- * @return 0 on success, -1 if a macro with that name already exists
+ * @return 0 on success, -1 if a macro with that name already exists, -2 on
+ *         allocation failure
  */
 int insertMacro(MacroTable *table, const char *name, char *body);
 

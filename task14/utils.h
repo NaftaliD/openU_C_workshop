@@ -68,5 +68,14 @@ char* duplicateString(const char *str);
  */
 char* getFirstToken(const char *str, const char *delimiters, const char **rest_out);
 
+/**
+ * Returns a pointer into str past any leading spaces/tabs. Does not modify
+ * str. Companion to getFirstToken, which leaves its rest_out pointing at
+ * the delimiter itself rather than past it.
+ * @param str the string to scan
+ * @return pointer into str at the first non-space/tab character (or at '\0')
+ */
+const char* skipWhitespace(const char *str);
+
 #endif /* UTILS_H */
 

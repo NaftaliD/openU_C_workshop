@@ -34,7 +34,7 @@ int insertMacro(MacroTable *table, const char *name, char *body)
     
     /* Allocate new macro node */
     node = (MacroNode *)malloc(sizeof(MacroNode));
-    if (node == NULL) return -1;
+    if (node == NULL) return -2;
     
     strcpy(node->name, name);
     node->body = body;

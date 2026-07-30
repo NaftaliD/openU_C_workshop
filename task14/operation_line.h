@@ -1,14 +1,13 @@
 /*
  * operation_line.h
- * A single parsed operation statement (add, jmp, hlt, ...). The list of them
- * is a thin wrapper around the generic PointerList (see pointer_list.h).
+ * A single parsed operation statement (add, jmp, hlt, ...), and a growable
+ * list of them (backed by growable_array.h's shared growth primitive).
  */
 
 #ifndef OPERATION_LINE_H
 #define OPERATION_LINE_H
 
 #include "common.h"
-#include "pointer_list.h"
 
 typedef enum {
     OPERAND_REGISTER,
@@ -38,7 +37,19 @@ typedef struct {
     int       has_error;
 } OperationNode;
 
-typedef PointerList OperationList;
+/* Growable array of pointers, in file order */
+typedef struct {
+    OperationNode **items;
+    int count;
+    int capacity;
+} OperationList;
+
+/**
+ * Allocates an OperationNode. Fields are left uninitialized -- the caller
+ * (parseLine's operation sub-parser) fills in every field unconditionally.
+ * @return the new node, or NULL on allocation failure
+ */
+OperationNode* createOperationNode(void);
 
 /**
  * Allocates and initializes an empty operation list.
@@ -59,5 +70,21 @@ int appendOperation(OperationList *list, OperationNode *node);
  * @param list the operation list to free
  */
 void destroyOperationList(OperationList *list);
+
+/**
+ * Builds a debug string describing one operation node. Caller must free the
+ * returned string.
+ * @param node the node to describe
+ * @return a malloc'd description string
+ */
+char* operationNodeToString(const OperationNode *node);
+
+/**
+ * Builds a debug string describing every node in the list. Caller must free
+ * the returned string.
+ * @param list the operation list to describe
+ * @return a malloc'd description string
+ */
+char* operationListToString(const OperationList *list);
 
 #endif /* OPERATION_LINE_H */

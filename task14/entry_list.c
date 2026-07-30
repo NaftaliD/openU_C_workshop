@@ -8,6 +8,7 @@
 #include <string.h>
 #include "common.h"
 #include "entry_list.h"
+#include "growable_array.h"
 
 EntryList* createEntryList(void)
 {
@@ -29,21 +30,18 @@ EntryList* createEntryList(void)
 
 int appendEntry(EntryList *list, int line_number, const char *symbol_name)
 {
-    EntryNode *temp;
-    int new_capacity;
-
     if (list == NULL || symbol_name == NULL) {
         return -1;
     }
 
+    if (strlen(symbol_name) > MAX_LABEL_LENGTH) {
+        return -1;
+    }
+
     if (list->count == list->capacity) {
-        new_capacity = list->capacity * 2;
-        temp = (EntryNode *)realloc(list->items, sizeof(EntryNode) * new_capacity);
-        if (temp == NULL) {
+        if (!growArray((void **)&list->items, &list->capacity, sizeof(EntryNode))) {
             return -1;
         }
-        list->items = temp;
-        list->capacity = new_capacity;
     }
 
     list->items[list->count].line_number = line_number;
@@ -60,4 +58,34 @@ void destroyEntryList(EntryList *list)
 
     free(list->items);
     free(list);
+}
+
+char* entryListToString(const EntryList *list)
+{
+    char buffer[4096];
+    int pos = 0;
+    int i;
+    char *result;
+
+    if (list == NULL) {
+        result = (char *)malloc(30);
+        if (result != NULL) {
+            strcpy(result, "[EntryList: NULL]\n");
+        }
+        return result;
+    }
+
+    pos += snprintf(buffer + pos, sizeof(buffer) - pos,
+                    "[EntryList: %d entries]\n", list->count);
+
+    for (i = 0; i < list->count && pos < (int)sizeof(buffer) - 100; i++) {
+        pos += snprintf(buffer + pos, sizeof(buffer) - pos, "  line %d: %s\n",
+                        list->items[i].line_number, list->items[i].symbol_name);
+    }
+
+    result = (char *)malloc(strlen(buffer) + 1);
+    if (result != NULL) {
+        strcpy(result, buffer);
+    }
+    return result;
 }

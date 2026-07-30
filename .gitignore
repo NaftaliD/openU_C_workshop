@@ -59,3 +59,16 @@ dkms.conf
 
 # Trace/debug logs
 *.log
+
+# task14 assembler build artifacts
+/task14/build_artifacts/
+/task14/*.am
+/task14/*.ob
+/task14/*.ent
+/task14/*.ext
+
+/task14/tests/src/
+
+# task14 small scratch .as/.am files used while developing -- the real
+# submission samples live directly under task14/tests/ instead
+/task14/tests/fixtures/

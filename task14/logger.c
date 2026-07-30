@@ -22,28 +22,35 @@ void initLogger(const char *filename)
         return;
     }
 
-    logMessage("[DEBUG LOG INITIALIZED]\n");
+    logMessage(LOG_DEBUG, "[DEBUG LOG INITIALIZED]\n");
 }
 
-void logMessage(const char *format, ...)
+void logMessage(LogLevel level, const char *format, ...)
 {
     va_list args;
 
-    if (!IS_DEBUG || log_file == NULL) {
-        return;
+    if (IS_DEBUG && log_file != NULL) {
+        va_start(args, format);
+        vfprintf(log_file, format, args);
+        va_end(args);
+        fflush(log_file);  /* Immediate flush for real-time logging */
     }
 
-    va_start(args, format);
-    vfprintf(log_file, format, args);
-    va_end(args);
-
-    fflush(log_file);  /* Immediate flush for real-time logging */
+    if (level == LOG_INFO) {
+        va_start(args, format);
+        vprintf(format, args);
+        va_end(args);
+    } else if (level == LOG_ERROR) {
+        va_start(args, format);
+        vfprintf(stderr, format, args);
+        va_end(args);
+    }
 }
 
 void closeLogger(void)
 {
     if (log_file != NULL) {
-        logMessage("[DEBUG LOG CLOSED]\n");
+        logMessage(LOG_DEBUG, "[DEBUG LOG CLOSED]\n");
         fclose(log_file);
         log_file = NULL;
     }

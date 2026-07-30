@@ -18,16 +18,23 @@ typedef enum {
     SYMBOL_TYPE_EXTERNAL
 } SymbolType;
 
-typedef struct SymbolNode {
+typedef struct {
     char name[MAX_LABEL_LENGTH + 1];
     int  value;    /* address; relocated += ICF later, only when type == DATA */
     SymbolType type;
     int  is_entry; /* set later by markEntry; never valid together with EXTERNAL */
-    struct SymbolNode *next;
 } SymbolNode;
 
+/* Growable array of structs (via growable_array.h), matching EntryList's/
+ * ErrorList's pattern. lookupSymbol returns a pointer into this array; that
+ * stays valid because every insertSymbol call happens during Pass One's
+ * single forward read, strictly before anything (markEntry, Pass Two) reads
+ * or holds a pointer -- no insert ever happens after a lookup result is
+ * retained. */
 typedef struct {
-    SymbolNode *head;
+    SymbolNode *items;
+    int count;
+    int capacity;
 } SymbolTable;
 
 /**
@@ -50,7 +57,8 @@ SymbolNode* lookupSymbol(SymbolTable *table, const char *name);
  * @param name the symbol's name
  * @param value the symbol's address (0 for SYMBOL_TYPE_EXTERNAL)
  * @param type the symbol's origin: CODE, DATA, or EXTERNAL
- * @return 0 on success, -1 if the name already exists
+ * @return 0 on success, -1 if the name already exists or is longer than
+ *         MAX_LABEL_LENGTH
  */
 int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type);
 
@@ -77,5 +85,13 @@ void relocateDataSymbols(SymbolTable *table, int icf);
  * @param table the symbol table to free
  */
 void destroySymbolTable(SymbolTable *table);
+
+/**
+ * Builds a debug string describing every symbol in the table. Caller must
+ * free the returned string.
+ * @param table the symbol table to describe
+ * @return a malloc'd description string
+ */
+char* symbolTableToString(const SymbolTable *table);
 
 #endif /* SYMBOL_TABLE_H */

@@ -186,3 +186,16 @@ char* getFirstToken(const char *str, const char *delimiters, const char **rest_o
     return token;
 }
 
+const char* skipWhitespace(const char *str)
+{
+    if (str == NULL) {
+        return NULL;
+    }
+
+    while (*str == ' ' || *str == '\t') {
+        str++;
+    }
+
+    return str;
+}
+
