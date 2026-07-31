@@ -59,6 +59,16 @@ DataDirectiveList* createDataDirectiveList(void);
 int appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node);
 
 /**
+ * Appends one value to node's own value list, growing it if needed (starts
+ * unallocated, as createDataDirectiveNode leaves it -- the first call here
+ * allocates it at INITIAL_LIST_CAPACITY).
+ * @param node the data-directive node being built
+ * @param value the value to append
+ * @return 0 on success, -1 on allocation failure
+ */
+int appendDirectiveValue(DataDirectiveNode *node, long value);
+
+/**
  * Frees each node's values array, each node, and the list itself.
  * @param list the data-directive list to free
  */

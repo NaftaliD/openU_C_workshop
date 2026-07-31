@@ -9,6 +9,12 @@ The spec never gives syntax rules for macro names, only that they can't be a
 reserved word. We apply the same rule as label names: must start with a
 letter, then letters/digits only, no underscores, max 31 characters.
 
+## Macro name vs. symbol collisions
+
+A symbol can't share a name with a macro. This is enforced for every kind
+of symbol definition -- labels and `.extern` alike -- not just labels.
+
+
 ## Line length
 
 The 80-character max line length is validated in the pre-assembler

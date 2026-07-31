@@ -36,9 +36,13 @@ typedef struct {
  * extra words.
  * @param input_file path to the source .as file
  * @param output_file path to write the expanded .am file
+ * @param macros_out on success, receives the macro table (caller owns
+ *                    destroying it via destroyMacroTable -- Pass One needs
+ *                    it to reject a label reusing a macro name); NULL on
+ *                    any failure
  * @return 0 on success, otherwise the number of errors found
  */
-int expandMacros(const char *input_file, const char *output_file);
+int expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out);
 
 /**
  * Validates a "mcro <name>" line: exactly two tokens, name short enough to

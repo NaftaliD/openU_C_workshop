@@ -28,6 +28,8 @@
 #define ADDRESS_UNASSIGNED (-1)   /* 0 is a valid DC value, so can't mean "unset" */
 #define MAX_ERROR_MESSAGE_LENGTH 128
 #define INITIAL_LIST_CAPACITY 16  /* growable-array lists start here, double on growth */
+#define INITIAL_IC 100            /* first instruction is loaded at address 100 */
+#define INITIAL_DC 0
 
 /* Complete Operation enum with all instructions from the ISA */
 typedef enum {

@@ -359,8 +359,9 @@ static int processLine(MacroProcessorState *state)
 }
 
 /**
- * Closes files, frees the macro table, and removes the partial output file
- * if any errors occurred.
+ * Closes files and removes the partial output file if any errors occurred.
+ * The macro table is only freed here on failure -- on success the caller
+ * takes ownership of it (see expandMacros's macros_out).
  * @param state the current processing state
  * @param output_file path to the .am file, removed if had_errors is set
  * @param had_errors 1 if any error occurred while processing this file
@@ -368,7 +369,7 @@ static int processLine(MacroProcessorState *state)
 static void finalizeResources(
     MacroProcessorState *state, const char *output_file, int had_errors)
 {
-    if (state->macro_table != NULL) {
+    if (had_errors && state->macro_table != NULL) {
         destroyMacroTable(state->macro_table);
     }
     if (state->in_fp != NULL) {
@@ -379,6 +380,7 @@ static void finalizeResources(
     }
     if (state->macro_body != NULL) {
         free(state->macro_body);
+        state->macro_body = NULL;
     }
     
     if (had_errors && remove(output_file) == 0) {
@@ -386,11 +388,13 @@ static void finalizeResources(
     }
 }
 
-int expandMacros(const char *input_file, const char *output_file)
+int expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out)
 {
     MacroProcessorState state;
     char *table_str;
-    
+
+    *macros_out = NULL;
+
     /* Initialize resources */
     if (initializeResources(input_file, output_file, &state) < 0) {
         return -1;  /* I/O failure */
@@ -453,6 +457,10 @@ int expandMacros(const char *input_file, const char *output_file)
     
     /* Cleanup resources, delete output on error */
     finalizeResources(&state, output_file, state.is_error);
-    
+
+    if (!state.is_error) {
+        *macros_out = state.macro_table;
+    }
+
     return state.is_error;
 }

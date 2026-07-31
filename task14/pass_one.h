@@ -1,10 +1,6 @@
 /*
  * pass_one.h
- * Shared per-line types for Pass One, and the single entry point that turns
- * one preprocessed .am line into a typed record. The per-line-type grammar
- * (operand validation, register/immediate range checks, directive value
- * parsing) is still a stub -- see the TODOs in pass_one.c -- but the shape
- * and wiring are in place.
+ * Per-line types for Pass One, the parser entry point, and the driver loop.
  */
 
 #ifndef PASS_ONE_H
@@ -13,7 +9,10 @@
 #include "common.h"
 #include "operation_line.h"
 #include "data_directive_line.h"
+#include "entry_list.h"
 #include "error_list.h"
+#include "symbol_table.h"
+#include "assembler_context.h"
 
 /* Result of extracting an optional leading "name:" label. Transient: the
  * driver inserts it into the symbol table and discards it -- never stored
@@ -41,7 +40,7 @@ typedef union {
 
 /**
  * Detects and consumes a leading "name:" label (colon immediately adjacent,
- * no space before it). Reuses isValidSymbolName/isReservedWord from utils.h.
+ * no space before it).
  * @param line the line to scan
  * @param label_out receives has_label and the label name if one was found
  * @param rest_out receives a pointer to the remainder of line after the label
@@ -68,5 +67,16 @@ int extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
 LineType parseLine(const char *raw_line, int line_number,
                     ParsedLinePayload *out, LabelInfo *out_label,
                     ErrorList *errors);
+
+/**
+ * Runs Pass One over an already-expanded .am file into context: IC/DC
+ * bookkeeping, symbol/label insertion, and node lists in file order.
+ * context->macros must already be set (see expandMacros); the rest of
+ * context must already be allocated (see createAssemblerContext).
+ * @param am_file path to the expanded .am file to read
+ * @param context the assembler context to populate
+ * @return 0 on success, -1 if am_file could not be opened
+ */
+int runPassOne(const char *am_file, AssemblerContext *context);
 
 #endif /* PASS_ONE_H */

@@ -65,6 +65,26 @@ int appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node)
     return 0;
 }
 
+int appendDirectiveValue(DataDirectiveNode *node, long value)
+{
+    if (node->values == NULL) {
+        node->values = (long *)malloc(sizeof(long) * INITIAL_LIST_CAPACITY);
+        if (node->values == NULL) {
+            return -1;
+        }
+        node->value_capacity = INITIAL_LIST_CAPACITY;
+        node->value_count = 0;
+    } else if (node->value_count == node->value_capacity) {
+        if (!growArray((void **)&node->values, &node->value_capacity, sizeof(long))) {
+            return -1;
+        }
+    }
+
+    node->values[node->value_count] = value;
+    node->value_count++;
+    return 0;
+}
+
 void destroyDataDirectiveList(DataDirectiveList *list)
 {
     int i;
