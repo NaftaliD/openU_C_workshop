@@ -60,7 +60,7 @@ int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType typ
 
     if (table->count == table->capacity) {
         if (!growArray((void **)&table->items, &table->capacity, sizeof(SymbolNode))) {
-            return -1;
+            return -2;
         }
     }
 

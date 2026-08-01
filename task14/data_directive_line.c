@@ -85,6 +85,19 @@ int appendDirectiveValue(DataDirectiveNode *node, long value)
     return 0;
 }
 
+void relocateDataDirectiveAddresses(DataDirectiveList *list, int icf)
+{
+    int i;
+
+    if (list == NULL) {
+        return;
+    }
+
+    for (i = 0; i < list->count; i++) {
+        list->items[i]->address += icf;
+    }
+}
+
 void destroyDataDirectiveList(DataDirectiveList *list)
 {
     int i;
@@ -121,7 +134,9 @@ char* dataDirectiveNodeToString(const DataDirectiveNode *node)
                     "[DataDirectiveNode line=%d directive=%s values=(",
                     node->line_number, directiveToString(node->directive));
 
-    for (i = 0; i < node->value_count; i++) {
+    /* Bounded like dataDirectiveListToString's own loop -- value_count is
+     * unbounded, and without this, pos could run past buffer's end. */
+    for (i = 0; i < node->value_count && pos < (int)sizeof(buffer) - 100; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s%ld",
                         i > 0 ? "," : "", node->values[i]);
     }

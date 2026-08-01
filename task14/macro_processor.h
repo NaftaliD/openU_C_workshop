@@ -31,16 +31,15 @@ typedef struct {
 
 /**
  * Reads input_file, expands all mcro/mcroend definitions and invocations,
- * and writes the result to output_file. Validates that macro names aren't
- * reserved words, follow label syntax, and that mcro/mcroend lines have no
- * extra words.
+ * and writes the result to output_file. Stops at the first error rather
+ * than collecting every one (see README.md for why).
  * @param input_file path to the source .as file
  * @param output_file path to write the expanded .am file
  * @param macros_out on success, receives the macro table (caller owns
  *                    destroying it via destroyMacroTable -- Pass One needs
  *                    it to reject a label reusing a macro name); NULL on
  *                    any failure
- * @return 0 on success, otherwise the number of errors found
+ * @return 0 on success, 1 if an error was found, -1 on I/O failure
  */
 int expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out);
 

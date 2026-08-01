@@ -31,6 +31,56 @@
 #define INITIAL_IC 100            /* first instruction is loaded at address 100 */
 #define INITIAL_DC 0
 
+#define MIN_REGISTER_NUMBER 0
+#define MAX_REGISTER_NUMBER 31
+
+/* Signed storage-width ranges, shared by data-directive values (.db/.dh/.dw)
+ * and instruction immediates (16-bit) wherever the same width applies. */
+#define MIN_8BIT_SIGNED (-128)
+#define MAX_8BIT_SIGNED 127
+#define MIN_16BIT_SIGNED (-32768)
+#define MAX_16BIT_SIGNED 32767
+#define MIN_32BIT_SIGNED (-2147483647L - 1)
+#define MAX_32BIT_SIGNED 2147483647L
+
+/* Error messages: label/symbol-name validation (extractLabel,
+ * parseSymbolOperand, and eventually operand label references all share
+ * this via validateSymbolToken). */
+#define ERR_SYMBOL_TOO_LONG "Symbol name exceeds maximum length"
+#define ERR_SYMBOL_INVALID_SYNTAX "Invalid symbol name syntax"
+#define ERR_SYMBOL_RESERVED_WORD "Symbol name is a reserved word"
+#define ERR_SYMBOL_MISSING "Missing symbol name"
+#define ERR_SYMBOL_TRAILING_CHARS "Extra characters after symbol name"
+#define ERR_SYMBOL_IS_MACRO_NAME "Symbol name is also a macro name"
+#define ERR_DUPLICATE_LABEL "Duplicate label"
+#define ERR_SYMBOL_ATTRIBUTE_CONFLICT "Symbol already defined with a different attribute"
+#define ERR_LABEL_WITHOUT_STATEMENT "Label must be followed by an instruction or directive"
+
+/* Error messages: data directives (.db/.dw/.dh/.asciz) */
+#define ERR_VALUE_LIST_MISSING "Missing value list"
+#define ERR_EXPECTED_NUMBER "Expected a number"
+#define ERR_VALUE_OUT_OF_RANGE_FMT "Value out of range for %s"
+#define ERR_EXPECTED_COMMA_VALUES "Expected ',' between values"
+#define ERR_EXPECTED_VALUE_AFTER_COMMA "Expected a value after ','"
+#define ERR_ASCIZ_MISSING_OPEN_QUOTE "Expected '\"' to start .asciz string"
+#define ERR_ASCIZ_NON_PRINTABLE "String contains a non-printable character"
+#define ERR_ASCIZ_MISSING_CLOSE_QUOTE "Missing closing '\"' for .asciz string"
+#define ERR_ASCIZ_TRAILING_CHARS "Extra characters after .asciz string"
+
+/* Error messages: operation/directive line dispatch */
+#define ERR_UNKNOWN_DIRECTIVE "Unknown directive"
+#define ERR_UNKNOWN_OPERATION "Unknown operation"
+
+/* Error messages: operation operands */
+#define ERR_EXPECTED_REGISTER "Expected a register operand"
+#define ERR_REGISTER_OUT_OF_RANGE "Register number out of range (0-31)"
+#define ERR_IMMEDIATE_OUT_OF_RANGE "Immediate value out of range (-32768 to 32767)"
+#define ERR_EXPECTED_COMMA_OPERANDS "Expected ',' between operands"
+#define ERR_TRAILING_OPERAND_CHARS "Extra characters after operands"
+
+/* Error messages: general */
+#define ERR_OUT_OF_MEMORY "Out of memory"
+
 /* Complete Operation enum with all instructions from the ISA */
 typedef enum {
     /* R-type instructions */

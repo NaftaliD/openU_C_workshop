@@ -75,6 +75,16 @@ int appendDirectiveValue(DataDirectiveNode *node, long value);
 void destroyDataDirectiveList(DataDirectiveList *list);
 
 /**
+ * Adds icf to every node's address. Called once, after Pass One finishes,
+ * to shift data addresses past the code image -- mirrors
+ * relocateDataSymbols in symbol_table.h, which does the same for the
+ * symbol table's DATA-type entries.
+ * @param list the data-directive list
+ * @param icf the final instruction counter value
+ */
+void relocateDataDirectiveAddresses(DataDirectiveList *list, int icf);
+
+/**
  * Builds a debug string describing one data-directive node. Caller must
  * free the returned string.
  * @param node the node to describe

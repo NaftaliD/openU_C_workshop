@@ -14,6 +14,22 @@ letter, then letters/digits only, no underscores, max 31 characters.
 A symbol can't share a name with a macro. This is enforced for every kind
 of symbol definition -- labels and `.extern` alike -- not just labels.
 
+## A label with nothing after it is an error
+
+`FOO:` alone on a line is rejected (`ERR_LABEL_WITHOUT_STATEMENT`), not
+treated as blank -- there's no instruction/directive to tell Pass One
+whether it should be CODE- or DATA-typed.
+
+## Pre-assembler stops at the first error, Pass One doesn't
+
+Pass One collects every error in the file before deciding whether to abort
+(each line parses independently, so one bad line can't corrupt how later
+lines are read). The pre-assembler (`expandMacros`) deliberately does
+*not* do this -- it stops scanning at the first error. Macro-tracking state
+(inside a definition or not, whose body is being collected) is cumulative
+across lines, so one real problem (e.g. a missing `mcroend`) would make
+every subsequent line get misinterpreted if we kept going, producing a
+cascade of confusing secondary errors instead of the one real one.
 
 ## Line length
 
@@ -36,5 +52,6 @@ runs.
 
 ## Status
 
-Macro expansion (pre-assembler) is done. Pass One, Pass Two and the output
-file generator (.ob/.ent/.ext) are not implemented yet.
+Macro expansion (pre-assembler) and Pass One (grammar + driver) are done.
+Pass Two and the output file generator (.ob/.ent/.ext) are not implemented
+yet.

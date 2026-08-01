@@ -58,7 +58,7 @@ SymbolNode* lookupSymbol(SymbolTable *table, const char *name);
  * @param value the symbol's address (0 for SYMBOL_TYPE_EXTERNAL)
  * @param type the symbol's origin: CODE, DATA, or EXTERNAL
  * @return 0 on success, -1 if the name already exists or is longer than
- *         MAX_LABEL_LENGTH
+ *         MAX_LABEL_LENGTH, -2 on allocation failure
  */
 int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type);
 

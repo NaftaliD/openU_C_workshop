@@ -23,15 +23,15 @@
 static int validateSymbolToken(const char *token, int line_number, ErrorList *errors)
 {
     if (strlen(token) > MAX_LABEL_LENGTH) {
-        appendError(errors, line_number, "Symbol name exceeds maximum length");
+        appendError(errors, line_number, ERR_SYMBOL_TOO_LONG);
         return 0;
     }
     if (!isValidSymbolName(token)) {
-        appendError(errors, line_number, "Invalid symbol name syntax");
+        appendError(errors, line_number, ERR_SYMBOL_INVALID_SYNTAX);
         return 0;
     }
     if (isReservedWord(token)) {
-        appendError(errors, line_number, "Symbol name is a reserved word");
+        appendError(errors, line_number, ERR_SYMBOL_RESERVED_WORD);
         return 0;
     }
     return 1;
@@ -68,29 +68,6 @@ int extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
     return 1;
 }
 
-/**
- * Parses the operand portion of an operation line into out.
- * TODO: operand count/type validation, register/immediate range checks.
- * Currently a stub: marks every line as an error so nothing downstream
- * trusts unparsed data.
- * @param op which operation this line uses (already looked up, never invalid)
- * @param rest the line, after the label and opcode name
- * @param out the node to fill in
- * @param line_number for error reporting
- * @param errors error accumulator
- */
-static void parseOperationLine(Operation op, const char *rest, OperationNode *out,
-                                int line_number, ErrorList *errors)
-{
-    out->line_number = line_number;
-    out->op = op;
-    out->operand_count = 0;
-    out->address = ADDRESS_UNASSIGNED;
-    out->has_error = 1;
-    appendError(errors, line_number, "Operation grammar not yet implemented");
-    (void)rest;
-}
-
 typedef enum {
     NUM_OK,
     NUM_MISSING,   /* no digits found; *p left unchanged */
@@ -98,9 +75,9 @@ typedef enum {
 } NumberParseResult;
 
 /**
- * Parses one signed decimal integer per the language spec (section 6):
- * optional '+'/'-' then decimal digits. Advances *p past what it consumed
- * on success; leaves *p unchanged on NUM_MISSING.
+ * Parses one signed decimal integer: optional '+'/'-' then decimal digits.
+ * Advances *p past what it consumed on success; leaves *p unchanged on
+ * NUM_MISSING.
  * @param p scan position, in/out
  * @param value_out receives the parsed value on NUM_OK
  * @return NUM_OK, NUM_MISSING, or NUM_OVERFLOW
@@ -134,9 +111,9 @@ static NumberParseResult parseSignedInteger(const char **p, long *value_out)
 static int valueFitsDirective(Directive directive, long value)
 {
     switch (directive) {
-        case DIRECTIVE_DB: return value >= -128 && value <= 127;
-        case DIRECTIVE_DH: return value >= -32768 && value <= 32767;
-        case DIRECTIVE_DW: return value >= (-2147483647L - 1) && value <= 2147483647L;
+        case DIRECTIVE_DB: return value >= MIN_8BIT_SIGNED && value <= MAX_8BIT_SIGNED;
+        case DIRECTIVE_DH: return value >= MIN_16BIT_SIGNED && value <= MAX_16BIT_SIGNED;
+        case DIRECTIVE_DW: return value >= MIN_32BIT_SIGNED && value <= MAX_32BIT_SIGNED;
         default:           return 0;
     }
 }
@@ -159,7 +136,7 @@ static void parseNumericValues(Directive directive, const char *rest, DataDirect
     char message[MAX_ERROR_MESSAGE_LENGTH];
 
     if (*p == '\0') {
-        appendError(errors, line_number, "Missing value list");
+        appendError(errors, line_number, ERR_VALUE_LIST_MISSING);
         out->has_error = 1;
         return;
     }
@@ -168,18 +145,18 @@ static void parseNumericValues(Directive directive, const char *rest, DataDirect
         result = parseSignedInteger(&p, &value);
 
         if (result == NUM_MISSING) {
-            appendError(errors, line_number, "Expected a number");
+            appendError(errors, line_number, ERR_EXPECTED_NUMBER);
             out->has_error = 1;
             return;
         }
         if (result == NUM_OVERFLOW || !valueFitsDirective(directive, value)) {
-            snprintf(message, sizeof(message), "Value out of range for %s", directiveToString(directive));
+            snprintf(message, sizeof(message), ERR_VALUE_OUT_OF_RANGE_FMT, directiveToString(directive));
             appendError(errors, line_number, message);
             out->has_error = 1;
             return;
         }
         if (appendDirectiveValue(out, value) != 0) {
-            appendError(errors, line_number, "Out of memory");
+            appendError(errors, line_number, ERR_OUT_OF_MEMORY);
             out->has_error = 1;
             return;
         }
@@ -189,13 +166,13 @@ static void parseNumericValues(Directive directive, const char *rest, DataDirect
             return; /* value list complete */
         }
         if (*p != ',') {
-            appendError(errors, line_number, "Expected ',' between values");
+            appendError(errors, line_number, ERR_EXPECTED_COMMA_VALUES);
             out->has_error = 1;
             return;
         }
         p = skipWhitespace(p + 1);
         if (*p == '\0' || *p == ',') {
-            appendError(errors, line_number, "Expected a value after ','");
+            appendError(errors, line_number, ERR_EXPECTED_VALUE_AFTER_COMMA);
             out->has_error = 1;
             return;
         }
@@ -204,7 +181,7 @@ static void parseNumericValues(Directive directive, const char *rest, DataDirect
 
 /**
  * Parses a double-quoted string (.asciz) into out: one value per character,
- * plus a trailing 0 terminator, per the language spec.
+ * plus a trailing 0 terminator.
  * @param rest the line, after the directive name
  * @param out the node to fill in
  * @param line_number for error reporting
@@ -215,7 +192,7 @@ static void parseAsciz(const char *rest, DataDirectiveNode *out, int line_number
     const char *p = skipWhitespace(rest);
 
     if (*p != '"') {
-        appendError(errors, line_number, "Expected '\"' to start .asciz string");
+        appendError(errors, line_number, ERR_ASCIZ_MISSING_OPEN_QUOTE);
         out->has_error = 1;
         return;
     }
@@ -223,32 +200,32 @@ static void parseAsciz(const char *rest, DataDirectiveNode *out, int line_number
 
     for (; *p != '"' && *p != '\0'; p++) {
         if (!isprint((unsigned char)*p)) {
-            appendError(errors, line_number, "String contains a non-printable character");
+            appendError(errors, line_number, ERR_ASCIZ_NON_PRINTABLE);
             out->has_error = 1;
             return;
         }
         if (appendDirectiveValue(out, (long)(unsigned char)*p) != 0) {
-            appendError(errors, line_number, "Out of memory");
+            appendError(errors, line_number, ERR_OUT_OF_MEMORY);
             out->has_error = 1;
             return;
         }
     }
 
     if (*p != '"') {
-        appendError(errors, line_number, "Missing closing '\"' for .asciz string");
+        appendError(errors, line_number, ERR_ASCIZ_MISSING_CLOSE_QUOTE);
         out->has_error = 1;
         return;
     }
 
     p = skipWhitespace(p + 1);
     if (*p != '\0') {
-        appendError(errors, line_number, "Extra characters after .asciz string");
+        appendError(errors, line_number, ERR_ASCIZ_TRAILING_CHARS);
         out->has_error = 1;
         return;
     }
 
     if (appendDirectiveValue(out, 0) != 0) { /* trailing null terminator */
-        appendError(errors, line_number, "Out of memory");
+        appendError(errors, line_number, ERR_OUT_OF_MEMORY);
         out->has_error = 1;
     }
 }
@@ -291,6 +268,384 @@ static void parseDataDirectiveLine(Directive directive, const char *rest,
 }
 
 /**
+ * Consumes one register operand ("$N"): validates the '$' prefix, then
+ * parses a signed integer for N (accepting a leading sign here so "$-1"
+ * reports as out-of-range rather than a syntax error) and range-checks it
+ * against 0-31.
+ * @param p scan position, in/out
+ * @param register_out receives the register number on success
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ * @return 1 on success, 0 otherwise (an error has been appended)
+ */
+static int parseRegisterOperand(const char **p, int *register_out, int line_number, ErrorList *errors)
+{
+    long value;
+    NumberParseResult result;
+
+    if (**p != '$') {
+        appendError(errors, line_number, ERR_EXPECTED_REGISTER);
+        return 0;
+    }
+    (*p)++;
+
+    result = parseSignedInteger(p, &value);
+    if (result == NUM_MISSING) {
+        appendError(errors, line_number, ERR_EXPECTED_REGISTER);
+        return 0;
+    }
+    if (result == NUM_OVERFLOW || value < MIN_REGISTER_NUMBER || value > MAX_REGISTER_NUMBER) {
+        appendError(errors, line_number, ERR_REGISTER_OUT_OF_RANGE);
+        return 0;
+    }
+
+    *register_out = (int)value;
+    return 1;
+}
+
+/**
+ * Consumes one immediate operand: a signed decimal integer within the
+ * 16-bit range shared by every I-type immediate field.
+ * @param p scan position, in/out
+ * @param value_out receives the value on success
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ * @return 1 on success, 0 otherwise (an error has been appended)
+ */
+static int parseImmediateOperand(const char **p, long *value_out, int line_number, ErrorList *errors)
+{
+    NumberParseResult result = parseSignedInteger(p, value_out);
+
+    if (result == NUM_MISSING) {
+        appendError(errors, line_number, ERR_EXPECTED_NUMBER);
+        return 0;
+    }
+    if (result == NUM_OVERFLOW || *value_out < MIN_16BIT_SIGNED || *value_out > MAX_16BIT_SIGNED) {
+        appendError(errors, line_number, ERR_IMMEDIATE_OUT_OF_RANGE);
+        return 0;
+    }
+    return 1;
+}
+
+/**
+ * Consumes one label-reference operand: a token ending at whitespace or ','
+ * (comma included so trailing punctuation isn't swallowed into the name),
+ * validated via validateSymbolToken.
+ * @param p scan position, in/out
+ * @param label_out receives the name on success (must hold MAX_LABEL_LENGTH+1)
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ * @return 1 on success, 0 otherwise (an error has been appended)
+ */
+static int parseLabelRefOperand(const char **p, char *label_out, int line_number, ErrorList *errors)
+{
+    char *token;
+    int valid;
+
+    token = getFirstToken(*p, " \t,", p);
+    if (token == NULL) {
+        appendError(errors, line_number, ERR_OUT_OF_MEMORY);
+        return 0;
+    }
+
+    valid = validateSymbolToken(token, line_number, errors);
+    if (valid) {
+        strcpy(label_out, token);
+    }
+    free(token);
+    return valid;
+}
+
+/**
+ * Requires a ',' between operands (optional whitespace on both sides).
+ * @param p scan position, in/out
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ * @return 1 on success, 0 otherwise (an error has been appended)
+ */
+static int expectOperandSeparator(const char **p, int line_number, ErrorList *errors)
+{
+    *p = skipWhitespace(*p);
+    if (**p != ',') {
+        appendError(errors, line_number, ERR_EXPECTED_COMMA_OPERANDS);
+        return 0;
+    }
+    *p = skipWhitespace(*p + 1);
+    return 1;
+}
+
+/**
+ * Requires nothing but whitespace remains at p.
+ * @param p scan position (not advanced further)
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ * @return 1 if the line ends here, 0 otherwise (an error has been appended)
+ */
+static int expectEndOfOperands(const char *p, int line_number, ErrorList *errors)
+{
+    if (*skipWhitespace(p) != '\0') {
+        appendError(errors, line_number, ERR_TRAILING_OPERAND_CHARS);
+        return 0;
+    }
+    return 1;
+}
+
+/**
+ * Parses `count` comma-separated register operands: "$rs, $rt[, $rd]".
+ * Shared by the 3-register shape (add/sub/and/or/nor) and the 2-register
+ * shape (move/mvhi/mvlo) -- identical grammar, only the count differs.
+ * @param count how many register operands this operation takes (2 or 3)
+ * @param rest the line, after the opcode name
+ * @param out the node to fill in (operands/operand_count/has_error)
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseRegisterOperands(int count, const char *rest, OperationNode *out,
+                                   int line_number, ErrorList *errors)
+{
+    const char *p = skipWhitespace(rest);
+    int i;
+    int register_number;
+
+    for (i = 0; i < count; i++) {
+        if (i > 0 && !expectOperandSeparator(&p, line_number, errors)) {
+            out->has_error = 1;
+            return;
+        }
+        if (!parseRegisterOperand(&p, &register_number, line_number, errors)) {
+            out->has_error = 1;
+            return;
+        }
+        out->operands[i].type = OPERAND_REGISTER;
+        out->operands[i].value.register_number = register_number;
+        out->operand_count++;
+    }
+
+    if (!expectEndOfOperands(p, line_number, errors)) {
+        out->has_error = 1;
+    }
+}
+
+/**
+ * Parses "$rs, immed, $rt" -- shared by I-type arithmetic
+ * (addi/subi/andi/ori/nori) and I-type memory (lb/sb/lw/sw/lh/sh), which
+ * have identical operand grammar even though their semantics differ.
+ * @param rest the line, after the opcode name
+ * @param out the node to fill in
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseRegImmedRegOperands(const char *rest, OperationNode *out,
+                                      int line_number, ErrorList *errors)
+{
+    const char *p = skipWhitespace(rest);
+    int rs;
+    long immediate;
+    int rt;
+
+    if (!parseRegisterOperand(&p, &rs, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[0].type = OPERAND_REGISTER;
+    out->operands[0].value.register_number = rs;
+    out->operand_count++;
+
+    if (!expectOperandSeparator(&p, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    if (!parseImmediateOperand(&p, &immediate, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[1].type = OPERAND_IMMEDIATE;
+    out->operands[1].value.immediate_value = immediate;
+    out->operand_count++;
+
+    if (!expectOperandSeparator(&p, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    if (!parseRegisterOperand(&p, &rt, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[2].type = OPERAND_REGISTER;
+    out->operands[2].value.register_number = rt;
+    out->operand_count++;
+
+    if (!expectEndOfOperands(p, line_number, errors)) {
+        out->has_error = 1;
+    }
+}
+
+/**
+ * Parses "$rs, $rt, label" (bne/beq/blt/bgt).
+ * @param rest the line, after the opcode name
+ * @param out the node to fill in
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseRegRegLabelOperands(const char *rest, OperationNode *out,
+                                      int line_number, ErrorList *errors)
+{
+    const char *p = skipWhitespace(rest);
+    int rs;
+    int rt;
+
+    if (!parseRegisterOperand(&p, &rs, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[0].type = OPERAND_REGISTER;
+    out->operands[0].value.register_number = rs;
+    out->operand_count++;
+
+    if (!expectOperandSeparator(&p, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    if (!parseRegisterOperand(&p, &rt, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[1].type = OPERAND_REGISTER;
+    out->operands[1].value.register_number = rt;
+    out->operand_count++;
+
+    if (!expectOperandSeparator(&p, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operands[2].type = OPERAND_LABEL_REF;
+    if (!parseLabelRefOperand(&p, out->operands[2].value.label_name, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operand_count++;
+
+    if (!expectEndOfOperands(p, line_number, errors)) {
+        out->has_error = 1;
+    }
+}
+
+/**
+ * Parses a single label operand (la/call).
+ * @param rest the line, after the opcode name
+ * @param out the node to fill in
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseLabelOnlyOperand(const char *rest, OperationNode *out,
+                                   int line_number, ErrorList *errors)
+{
+    const char *p = skipWhitespace(rest);
+
+    out->operands[0].type = OPERAND_LABEL_REF;
+    if (!parseLabelRefOperand(&p, out->operands[0].value.label_name, line_number, errors)) {
+        out->has_error = 1;
+        return;
+    }
+    out->operand_count++;
+
+    if (!expectEndOfOperands(p, line_number, errors)) {
+        out->has_error = 1;
+    }
+}
+
+/**
+ * Parses jmp's one operand, which is either a label ("jmp label") or a
+ * register ("jmp $N") -- disambiguated by whether it starts with '$'.
+ * @param rest the line, after the opcode name
+ * @param out the node to fill in
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseJmpOperand(const char *rest, OperationNode *out, int line_number, ErrorList *errors)
+{
+    const char *p = skipWhitespace(rest);
+    int register_number;
+
+    if (*p == '$') {
+        if (!parseRegisterOperand(&p, &register_number, line_number, errors)) {
+            out->has_error = 1;
+            return;
+        }
+        out->operands[0].type = OPERAND_REGISTER;
+        out->operands[0].value.register_number = register_number;
+    } else {
+        out->operands[0].type = OPERAND_LABEL_REF;
+        if (!parseLabelRefOperand(&p, out->operands[0].value.label_name, line_number, errors)) {
+            out->has_error = 1;
+            return;
+        }
+    }
+    out->operand_count++;
+
+    if (!expectEndOfOperands(p, line_number, errors)) {
+        out->has_error = 1;
+    }
+}
+
+/**
+ * Parses the operand portion of an operation line into out, dispatched by
+ * operand *shape* (not just R/I/J class -- e.g. R-type splits into
+ * 3-register and 2-register shapes; I-type into reg-immed-reg and
+ * reg-reg-label shapes; J-type into label-only, jmp's dual form, and none).
+ * @param op which operation this line uses (already looked up, never invalid)
+ * @param rest the line, after the label and opcode name
+ * @param out the node to fill in
+ * @param line_number for error reporting
+ * @param errors error accumulator
+ */
+static void parseOperationLine(Operation op, const char *rest, OperationNode *out,
+                                int line_number, ErrorList *errors)
+{
+    out->line_number = line_number;
+    out->op = op;
+    out->operand_count = 0;
+    out->address = ADDRESS_UNASSIGNED;
+    out->has_error = 0;
+
+    switch (op) {
+        case OP_ADD: case OP_SUB: case OP_AND: case OP_OR: case OP_NOR:
+            parseRegisterOperands(3, rest, out, line_number, errors);
+            break;
+
+        case OP_MOVE: case OP_MVHI: case OP_MVLO:
+            parseRegisterOperands(2, rest, out, line_number, errors);
+            break;
+
+        case OP_ADDI: case OP_SUBI: case OP_ANDI: case OP_ORI: case OP_NORI:
+        case OP_LB: case OP_SB: case OP_LW: case OP_SW: case OP_LH: case OP_SH:
+            parseRegImmedRegOperands(rest, out, line_number, errors);
+            break;
+
+        case OP_BNE: case OP_BEQ: case OP_BLT: case OP_BGT:
+            parseRegRegLabelOperands(rest, out, line_number, errors);
+            break;
+
+        case OP_LA: case OP_CALL:
+            parseLabelOnlyOperand(rest, out, line_number, errors);
+            break;
+
+        case OP_JMP:
+            parseJmpOperand(rest, out, line_number, errors);
+            break;
+
+        case OP_HLT:
+            if (!expectEndOfOperands(rest, line_number, errors)) {
+                out->has_error = 1;
+            }
+            break;
+
+        case OP_INVALID:
+            break; /* unreachable: parseLine only calls this for a looked-up operation */
+    }
+}
+
+/**
  * Parses the single symbol-name operand of an .entry/.extern line into
  * symbol_name_out: one token, following label-name syntax, nothing after it.
  * @param rest the line, after the directive name
@@ -308,16 +663,16 @@ static void parseSymbolOperand(const char *rest, char *symbol_name_out,
 
     token = getFirstToken(rest, " \t", &after);
     if (token == NULL) {
-        appendError(errors, line_number, "Out of memory");
+        appendError(errors, line_number, ERR_OUT_OF_MEMORY);
         return;
     }
 
     if (token[0] == '\0') {
-        appendError(errors, line_number, "Missing symbol name");
+        appendError(errors, line_number, ERR_SYMBOL_MISSING);
     } else if (!validateSymbolToken(token, line_number, errors)) {
         /* validateSymbolToken already appended the error */
     } else if (*skipWhitespace(after) != '\0') {
-        appendError(errors, line_number, "Extra characters after symbol name");
+        appendError(errors, line_number, ERR_SYMBOL_TRAILING_CHARS);
     } else {
         strcpy(symbol_name_out, token);
     }
@@ -340,6 +695,9 @@ LineType parseLine(const char *raw_line, int line_number,
     rest = skipWhitespace(rest);
 
     if (*rest == '\0') {
+        if (out_label->has_label) {
+            appendError(errors, line_number, ERR_LABEL_WITHOUT_STATEMENT);
+        }
         return LINE_TYPE_BLANK;
     }
 
@@ -348,16 +706,16 @@ LineType parseLine(const char *raw_line, int line_number,
      * non-empty token -- no need to check for one. */
     first_word = getFirstToken(rest, " \t", &rest);
     if (first_word == NULL) {
-        appendError(errors, line_number, "Out of memory");
+        appendError(errors, line_number, ERR_OUT_OF_MEMORY);
         return LINE_TYPE_BLANK;
     }
 
     rest = skipWhitespace(rest);
 
-    /* Per the language spec, a leading '.' is what makes a line a directive
-     * -- not whether the name that follows is recognized. That has to be
-     * checked before lookup, not derived from it, so a garbled ".foo" is
-     * reported as an unknown DIRECTIVE, not an unknown operation. */
+    /* A leading '.' is what makes a line a directive -- not whether the
+     * name that follows is recognized. That has to be checked before
+     * lookup, not derived from it, so a garbled ".foo" is reported as an
+     * unknown DIRECTIVE, not an unknown operation. */
     if (first_word[0] == '.') {
         directive = directiveFromString(first_word);
         free(first_word);
@@ -372,13 +730,13 @@ LineType parseLine(const char *raw_line, int line_number,
                 return LINE_TYPE_EXTERN;
 
             case DIRECTIVE_INVALID:
-                appendError(errors, line_number, "Unknown directive");
+                appendError(errors, line_number, ERR_UNKNOWN_DIRECTIVE);
                 return LINE_TYPE_BLANK;
 
             default: /* DIRECTIVE_DB / DIRECTIVE_DW / DIRECTIVE_DH / DIRECTIVE_ASCIZ */
                 out->directive = createDataDirectiveNode();
                 if (out->directive == NULL) {
-                    appendError(errors, line_number, "Out of memory");
+                    appendError(errors, line_number, ERR_OUT_OF_MEMORY);
                     return LINE_TYPE_BLANK;
                 }
                 parseDataDirectiveLine(directive, rest, out->directive, line_number, errors);
@@ -386,20 +744,20 @@ LineType parseLine(const char *raw_line, int line_number,
         }
     }
 
-    /* Not '.'-prefixed, so per spec this is an operation attempt regardless
-     * of whether the name turns out to be recognized -- same reasoning as
-     * the directive branch above. */
+    /* Not '.'-prefixed, so this is an operation attempt regardless of
+     * whether the name turns out to be recognized -- same reasoning as the
+     * directive branch above. */
     operation = operationFromString(first_word);
     free(first_word);
 
     if (operation == OP_INVALID) {
-        appendError(errors, line_number, "Unknown operation");
+        appendError(errors, line_number, ERR_UNKNOWN_OPERATION);
         return LINE_TYPE_BLANK;
     }
 
     out->operation = createOperationNode();
     if (out->operation == NULL) {
-        appendError(errors, line_number, "Out of memory");
+        appendError(errors, line_number, ERR_OUT_OF_MEMORY);
         return LINE_TYPE_BLANK;
     }
     parseOperationLine(operation, rest, out->operation, line_number, errors);
@@ -407,8 +765,7 @@ LineType parseLine(const char *raw_line, int line_number,
 }
 
 /**
- * Checks name against the macro table, appending an error if it collides
- * (spec: a symbol can't be both a macro name and a label/extern name).
+ * Checks name against the macro table, appending an error if it collides.
  * Shared by insertLabelSymbol and handleExternLine -- the rest of their
  * insertion logic differs (see each one's own comment).
  * @param context the assembler context (macros, errors)
@@ -419,7 +776,7 @@ LineType parseLine(const char *raw_line, int line_number,
 static int rejectMacroNameCollision(AssemblerContext *context, const char *name, int line_number)
 {
     if (lookupMacro(context->macros, name) != NULL) {
-        appendError(context->errors, line_number, "Symbol name is also a macro name");
+        appendError(context->errors, line_number, ERR_SYMBOL_IS_MACRO_NAME);
         return 0;
     }
     return 1;
@@ -440,6 +797,8 @@ static int rejectMacroNameCollision(AssemblerContext *context, const char *name,
 static void insertLabelSymbol(AssemblerContext *context, const LabelInfo *label, int value,
                                SymbolType type, int line_number)
 {
+    int result;
+
     if (!label->has_label) {
         return;
     }
@@ -448,8 +807,8 @@ static void insertLabelSymbol(AssemblerContext *context, const LabelInfo *label,
         return;
     }
 
-    if (insertSymbol(context->symbols, label->name, value, type) != 0) {
-        appendError(context->errors, line_number, "Duplicate label");
+    if ((result = insertSymbol(context->symbols, label->name, value, type)) != 0) {
+        appendError(context->errors, line_number, result == -1 ? ERR_DUPLICATE_LABEL : ERR_OUT_OF_MEMORY);
     }
 }
 
@@ -473,9 +832,13 @@ static void handleExternLine(AssemblerContext *context, const char *symbol_name,
     existing = lookupSymbol(context->symbols, symbol_name);
 
     if (existing == NULL) {
-        insertSymbol(context->symbols, symbol_name, 0, SYMBOL_TYPE_EXTERNAL);
+        /* Only -2 (OOM) is reachable here -- existing == NULL already
+         * rules out -1 (duplicate), so no dispatch on which failure. */
+        if (insertSymbol(context->symbols, symbol_name, 0, SYMBOL_TYPE_EXTERNAL) != 0) {
+            appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
+        }
     } else if (existing->type != SYMBOL_TYPE_EXTERNAL) {
-        appendError(context->errors, line_number, "Symbol already defined with a different attribute");
+        appendError(context->errors, line_number, ERR_SYMBOL_ATTRIBUTE_CONFLICT);
     }
 }
 
@@ -516,7 +879,7 @@ int runPassOne(const char *am_file, AssemblerContext *context)
                 if (appendOperation(context->operations, payload.operation) != 0) {
                     free(payload.operation);
                     payload.operation = NULL;
-                    appendError(context->errors, line_number, "Out of memory");
+                    appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
                 }
                 ic += 4; /* every instruction is 4 bytes, regardless of grammar errors */
                 break;
@@ -530,19 +893,27 @@ int runPassOne(const char *am_file, AssemblerContext *context)
                     free(payload.directive->values);
                     free(payload.directive);
                     payload.directive = NULL;
-                    appendError(context->errors, line_number, "Out of memory");
+                    appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
                 }
                 break;
 
             case LINE_TYPE_ENTRY:
-                /* Label on this line is ignored per spec; the symbol itself
-                 * may be a forward reference, so marking it waits for Pass Two. */
-                appendEntry(context->entries, line_number, payload.symbol_name);
+                /* Label on this line is ignored; the symbol itself may be a
+                 * forward reference, so marking it waits for Pass Two. An
+                 * empty name means parseSymbolOperand already failed and
+                 * appended its own error -- nothing valid to record here. */
+                if (payload.symbol_name[0] != '\0' &&
+                    appendEntry(context->entries, line_number, payload.symbol_name) != 0) {
+                    appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
+                }
                 break;
 
             case LINE_TYPE_EXTERN:
-                /* Label on this line is ignored per spec. */
-                handleExternLine(context, payload.symbol_name, line_number);
+                /* Label on this line is ignored. Same empty-name guard as
+                 * LINE_TYPE_ENTRY above. */
+                if (payload.symbol_name[0] != '\0') {
+                    handleExternLine(context, payload.symbol_name, line_number);
+                }
                 break;
         }
     }
@@ -552,6 +923,7 @@ int runPassOne(const char *am_file, AssemblerContext *context)
     context->icf = ic;
     context->dcf = dc;
     relocateDataSymbols(context->symbols, ic);
+    relocateDataDirectiveAddresses(context->directives, ic);
 
     return 0;
 }
