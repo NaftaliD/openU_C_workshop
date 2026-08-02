@@ -18,27 +18,27 @@
  * @param token the candidate symbol name
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 if valid, 0 otherwise (an error has been appended)
+ * @return TRUE if valid, FALSE otherwise (an error has been appended)
  */
-static int validateSymbolToken(const char *token, int line_number, ErrorList *errors)
+static Boolean validateSymbolToken(const char *token, int line_number, ErrorList *errors)
 {
     if (strlen(token) > MAX_LABEL_LENGTH) {
         appendError(errors, line_number, ERR_SYMBOL_TOO_LONG);
-        return 0;
+        return FALSE;
     }
     if (!isValidSymbolName(token)) {
         appendError(errors, line_number, ERR_SYMBOL_INVALID_SYNTAX);
-        return 0;
+        return FALSE;
     }
     if (isReservedWord(token)) {
         appendError(errors, line_number, ERR_SYMBOL_RESERVED_WORD);
-        return 0;
+        return FALSE;
     }
-    return 1;
+    return TRUE;
 }
 
-int extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
-                  int line_number, ErrorList *errors)
+Boolean extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
+                      int line_number, ErrorList *errors)
 {
     char *token;
     const char *after;
@@ -52,20 +52,20 @@ int extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
     if (token == NULL || *after != ':') {
         free(token);
         *rest_out = line;
-        return 0;
+        return FALSE;
     }
 
     *rest_out = after + 1;
 
     if (!validateSymbolToken(token, line_number, errors)) {
         free(token);
-        return -1;
+        return FALSE;
     }
 
     label_out->has_label = 1;
     strcpy(label_out->name, token);
     free(token);
-    return 1;
+    return TRUE;
 }
 
 typedef enum {
@@ -106,15 +106,15 @@ static NumberParseResult parseSignedInteger(const char **p, long *value_out)
 /**
  * @param directive a numeric data directive (.db/.dw/.dh)
  * @param value a value already known to fit in a long
- * @return 1 if value fits the directive's storage width, 0 otherwise
+ * @return TRUE if value fits the directive's storage width, FALSE otherwise
  */
-static int valueFitsDirective(Directive directive, long value)
+static Boolean valueFitsDirective(Directive directive, long value)
 {
     switch (directive) {
         case DIRECTIVE_DB: return value >= MIN_8BIT_SIGNED && value <= MAX_8BIT_SIGNED;
         case DIRECTIVE_DH: return value >= MIN_16BIT_SIGNED && value <= MAX_16BIT_SIGNED;
         case DIRECTIVE_DW: return value >= MIN_32BIT_SIGNED && value <= MAX_32BIT_SIGNED;
-        default:           return 0;
+        default:           return FALSE;
     }
 }
 
@@ -150,12 +150,12 @@ static void parseNumericValues(Directive directive, const char *rest, DataDirect
             return;
         }
         if (result == NUM_OVERFLOW || !valueFitsDirective(directive, value)) {
-            snprintf(message, sizeof(message), ERR_VALUE_OUT_OF_RANGE_FMT, directiveToString(directive));
+            snprintf(message, sizeof(message), ERR_VALUE_OUT_OF_RANGE, directiveToString(directive));
             appendError(errors, line_number, message);
             out->has_error = 1;
             return;
         }
-        if (appendDirectiveValue(out, value) != 0) {
+        if (appendDirectiveValue(out, value) == FALSE) {
             appendError(errors, line_number, ERR_OUT_OF_MEMORY);
             out->has_error = 1;
             return;
@@ -204,7 +204,7 @@ static void parseAsciz(const char *rest, DataDirectiveNode *out, int line_number
             out->has_error = 1;
             return;
         }
-        if (appendDirectiveValue(out, (long)(unsigned char)*p) != 0) {
+        if (appendDirectiveValue(out, (long)(unsigned char)*p) == FALSE) {
             appendError(errors, line_number, ERR_OUT_OF_MEMORY);
             out->has_error = 1;
             return;
@@ -224,7 +224,7 @@ static void parseAsciz(const char *rest, DataDirectiveNode *out, int line_number
         return;
     }
 
-    if (appendDirectiveValue(out, 0) != 0) { /* trailing null terminator */
+    if (appendDirectiveValue(out, 0) == FALSE) { /* trailing null terminator */
         appendError(errors, line_number, ERR_OUT_OF_MEMORY);
         out->has_error = 1;
     }
@@ -276,31 +276,31 @@ static void parseDataDirectiveLine(Directive directive, const char *rest,
  * @param register_out receives the register number on success
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 on success, 0 otherwise (an error has been appended)
+ * @return TRUE on success, FALSE otherwise (an error has been appended)
  */
-static int parseRegisterOperand(const char **p, int *register_out, int line_number, ErrorList *errors)
+static Boolean parseRegisterOperand(const char **p, int *register_out, int line_number, ErrorList *errors)
 {
     long value;
     NumberParseResult result;
 
     if (**p != '$') {
         appendError(errors, line_number, ERR_EXPECTED_REGISTER);
-        return 0;
+        return FALSE;
     }
     (*p)++;
 
     result = parseSignedInteger(p, &value);
     if (result == NUM_MISSING) {
         appendError(errors, line_number, ERR_EXPECTED_REGISTER);
-        return 0;
+        return FALSE;
     }
     if (result == NUM_OVERFLOW || value < MIN_REGISTER_NUMBER || value > MAX_REGISTER_NUMBER) {
         appendError(errors, line_number, ERR_REGISTER_OUT_OF_RANGE);
-        return 0;
+        return FALSE;
     }
 
     *register_out = (int)value;
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -310,21 +310,21 @@ static int parseRegisterOperand(const char **p, int *register_out, int line_numb
  * @param value_out receives the value on success
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 on success, 0 otherwise (an error has been appended)
+ * @return TRUE on success, FALSE otherwise (an error has been appended)
  */
-static int parseImmediateOperand(const char **p, long *value_out, int line_number, ErrorList *errors)
+static Boolean parseImmediateOperand(const char **p, long *value_out, int line_number, ErrorList *errors)
 {
     NumberParseResult result = parseSignedInteger(p, value_out);
 
     if (result == NUM_MISSING) {
         appendError(errors, line_number, ERR_EXPECTED_NUMBER);
-        return 0;
+        return FALSE;
     }
     if (result == NUM_OVERFLOW || *value_out < MIN_16BIT_SIGNED || *value_out > MAX_16BIT_SIGNED) {
         appendError(errors, line_number, ERR_IMMEDIATE_OUT_OF_RANGE);
-        return 0;
+        return FALSE;
     }
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -335,17 +335,17 @@ static int parseImmediateOperand(const char **p, long *value_out, int line_numbe
  * @param label_out receives the name on success (must hold MAX_LABEL_LENGTH+1)
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 on success, 0 otherwise (an error has been appended)
+ * @return TRUE on success, FALSE otherwise (an error has been appended)
  */
-static int parseLabelRefOperand(const char **p, char *label_out, int line_number, ErrorList *errors)
+static Boolean parseLabelRefOperand(const char **p, char *label_out, int line_number, ErrorList *errors)
 {
     char *token;
-    int valid;
+    Boolean valid;
 
     token = getFirstToken(*p, " \t,", p);
     if (token == NULL) {
         appendError(errors, line_number, ERR_OUT_OF_MEMORY);
-        return 0;
+        return FALSE;
     }
 
     valid = validateSymbolToken(token, line_number, errors);
@@ -361,17 +361,17 @@ static int parseLabelRefOperand(const char **p, char *label_out, int line_number
  * @param p scan position, in/out
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 on success, 0 otherwise (an error has been appended)
+ * @return TRUE on success, FALSE otherwise (an error has been appended)
  */
-static int expectOperandSeparator(const char **p, int line_number, ErrorList *errors)
+static Boolean expectOperandSeparator(const char **p, int line_number, ErrorList *errors)
 {
     *p = skipWhitespace(*p);
     if (**p != ',') {
         appendError(errors, line_number, ERR_EXPECTED_COMMA_OPERANDS);
-        return 0;
+        return FALSE;
     }
     *p = skipWhitespace(*p + 1);
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -379,15 +379,15 @@ static int expectOperandSeparator(const char **p, int line_number, ErrorList *er
  * @param p scan position (not advanced further)
  * @param line_number for error reporting
  * @param errors error accumulator
- * @return 1 if the line ends here, 0 otherwise (an error has been appended)
+ * @return TRUE if the line ends here, FALSE otherwise (an error has been appended)
  */
-static int expectEndOfOperands(const char *p, int line_number, ErrorList *errors)
+static Boolean expectEndOfOperands(const char *p, int line_number, ErrorList *errors)
 {
     if (*skipWhitespace(p) != '\0') {
         appendError(errors, line_number, ERR_TRAILING_OPERAND_CHARS);
-        return 0;
+        return FALSE;
     }
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -771,15 +771,15 @@ LineType parseLine(const char *raw_line, int line_number,
  * @param context the assembler context (macros, errors)
  * @param name the candidate symbol name
  * @param line_number for error reporting
- * @return 1 if name is free to use, 0 if it collided (an error was appended)
+ * @return TRUE if name is free to use, FALSE if it collided (an error was appended)
  */
-static int rejectMacroNameCollision(AssemblerContext *context, const char *name, int line_number)
+static Boolean rejectMacroNameCollision(AssemblerContext *context, const char *name, int line_number)
 {
     if (lookupMacro(context->macros, name) != NULL) {
         appendError(context->errors, line_number, ERR_SYMBOL_IS_MACRO_NAME);
-        return 0;
+        return FALSE;
     }
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -797,7 +797,7 @@ static int rejectMacroNameCollision(AssemblerContext *context, const char *name,
 static void insertLabelSymbol(AssemblerContext *context, const LabelInfo *label, int value,
                                SymbolType type, int line_number)
 {
-    int result;
+    ResultCode result;
 
     if (!label->has_label) {
         return;
@@ -807,8 +807,9 @@ static void insertLabelSymbol(AssemblerContext *context, const LabelInfo *label,
         return;
     }
 
-    if ((result = insertSymbol(context->symbols, label->name, value, type)) != 0) {
-        appendError(context->errors, line_number, result == -1 ? ERR_DUPLICATE_LABEL : ERR_OUT_OF_MEMORY);
+    if ((result = insertSymbol(context->symbols, label->name, value, type)) != RC_SUCCESS) {
+        appendError(context->errors, line_number,
+                    result == RC_DUPLICATE ? ERR_DUPLICATE_LABEL : ERR_OUT_OF_MEMORY);
     }
 }
 
@@ -832,9 +833,8 @@ static void handleExternLine(AssemblerContext *context, const char *symbol_name,
     existing = lookupSymbol(context->symbols, symbol_name);
 
     if (existing == NULL) {
-        /* Only -2 (OOM) is reachable here -- existing == NULL already
-         * rules out -1 (duplicate), so no dispatch on which failure. */
-        if (insertSymbol(context->symbols, symbol_name, 0, SYMBOL_TYPE_EXTERNAL) != 0) {
+        /* Only RC_OUT_OF_MEMORY is reachable here  */
+        if (insertSymbol(context->symbols, symbol_name, 0, SYMBOL_TYPE_EXTERNAL) != RC_SUCCESS) {
             appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
         }
     } else if (existing->type != SYMBOL_TYPE_EXTERNAL) {
@@ -876,12 +876,12 @@ int runPassOne(const char *am_file, AssemblerContext *context)
             case LINE_TYPE_OPERATION:
                 insertLabelSymbol(context, &label, ic, SYMBOL_TYPE_CODE, line_number);
                 payload.operation->address = ic;
-                if (appendOperation(context->operations, payload.operation) != 0) {
+                if (appendOperation(context->operations, payload.operation) == FALSE) {
                     free(payload.operation);
                     payload.operation = NULL;
                     appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
                 }
-                ic += 4; /* every instruction is 4 bytes, regardless of grammar errors */
+                ic += INSTRUCTION_SIZE_BYTES; /* regardless of grammar errors */
                 break;
 
             case LINE_TYPE_DATA_DIRECTIVE:
@@ -889,7 +889,7 @@ int runPassOne(const char *am_file, AssemblerContext *context)
                 payload.directive->address = dc;
                 dc += payload.directive->value_count *
                       getDirectiveByteWidth(payload.directive->directive);
-                if (appendDataDirective(context->directives, payload.directive) != 0) {
+                if (appendDataDirective(context->directives, payload.directive) == FALSE) {
                     free(payload.directive->values);
                     free(payload.directive);
                     payload.directive = NULL;
@@ -903,7 +903,7 @@ int runPassOne(const char *am_file, AssemblerContext *context)
                  * empty name means parseSymbolOperand already failed and
                  * appended its own error -- nothing valid to record here. */
                 if (payload.symbol_name[0] != '\0' &&
-                    appendEntry(context->entries, line_number, payload.symbol_name) != 0) {
+                    appendEntry(context->entries, line_number, payload.symbol_name) == FALSE) {
                     appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
                 }
                 break;

@@ -14,20 +14,20 @@
 #include "growable_array.h"
 
 
-int isMcroDefinitionStart(const char *line, char *name_out)
+Boolean isMcroDefinitionStart(const char *line, char *name_out)
 {
     char *token;
     const char *rest;
 
     if (line == NULL || name_out == NULL) {
-        return 0;
+        return FALSE;
     }
 
     /* First token must be "mcro" */
     token = getFirstToken(line, " \t", &rest);
     if (token == NULL || strcmp(token, "mcro") != 0) {
         free(token);
-        return 0;
+        return FALSE;
     }
     free(token);
     rest = skipWhitespace(rest);
@@ -36,13 +36,13 @@ int isMcroDefinitionStart(const char *line, char *name_out)
     token = getFirstToken(rest, " \t", &rest);
     if (token == NULL || token[0] == '\0') {
         free(token);
-        return 0;  /* No macro name provided */
+        return FALSE;  /* No macro name provided */
     }
 
     /* Reject before copying so an oversized name can never overflow name_out */
     if (strlen(token) > MAX_MACRO_NAME_LENGTH) {
         free(token);
-        return 0;
+        return FALSE;
     }
 
     strcpy(name_out, token);
@@ -51,36 +51,36 @@ int isMcroDefinitionStart(const char *line, char *name_out)
 
     /* There should be nothing left */
     if (*rest != '\0') {
-        return 0;  /* Extra words after macro name */
+        return FALSE;  /* Extra words after macro name */
     }
 
-    return 1;
+    return TRUE;
 }
 
-int isMcroDefinitionEnd(const char *line)
+Boolean isMcroDefinitionEnd(const char *line)
 {
     char *token;
     const char *rest;
 
     if (line == NULL) {
-        return 0;
+        return FALSE;
     }
 
     /* First token must be "mcroend" */
     token = getFirstToken(line, " \t", &rest);
     if (token == NULL || strcmp(token, "mcroend") != 0) {
         free(token);
-        return 0;
+        return FALSE;
     }
     free(token);
     rest = skipWhitespace(rest);
 
     /* There should be nothing left */
     if (*rest != '\0') {
-        return 0;  /* Extra words after mcroend */
+        return FALSE;  /* Extra words after mcroend */
     }
 
-    return 1;
+    return TRUE;
 }
 
 
@@ -88,9 +88,9 @@ int isMcroDefinitionEnd(const char *line)
  * Doubles the capacity of the macro body buffer.
  * @param macro_body pointer to the buffer to grow
  * @param capacity pointer to its current capacity, updated on success
- * @return 1 on success, 0 on allocation failure (caller must clean up)
+ * @return TRUE on success, FALSE on allocation failure (caller must clean up)
  */
-static int resizeMacroBuffer(char **macro_body, int *capacity)
+static Boolean resizeMacroBuffer(char **macro_body, int *capacity)
 {
     return growArray((void **)macro_body, capacity, sizeof(char));
 }
@@ -100,33 +100,33 @@ static int resizeMacroBuffer(char **macro_body, int *capacity)
  * @param input_file path to the source .as file
  * @param output_file path to the .am file to create
  * @param state the state struct to initialize
- * @return 0 on success, -1 on I/O or allocation failure
+ * @return TRUE on success, FALSE on I/O or allocation failure
  */
-static int initializeResources(
+static Boolean initializeResources(
     const char *input_file, const char *output_file,
     MacroProcessorState *state)
 {
     state->in_fp = fopen(input_file, "r");
     if (state->in_fp == NULL) {
-        logMessage(LOG_ERROR, "Error: Cannot open input file %s\n", input_file);
-        return -1;
+        logMessage(LOG_ERROR, ERR_MACRO_CANNOT_OPEN_INPUT, input_file);
+        return FALSE;
     }
 
     state->out_fp = fopen(output_file, "w");
     if (state->out_fp == NULL) {
-        logMessage(LOG_ERROR, "Error: Cannot open output file %s\n", output_file);
+        logMessage(LOG_ERROR, ERR_MACRO_CANNOT_OPEN_OUTPUT, output_file);
         fclose(state->in_fp);
-        return -1;
+        return FALSE;
     }
 
     state->macro_table = createMacroTable();
     if (state->macro_table == NULL) {
-        logMessage(LOG_ERROR, "Error: Cannot allocate macro table\n");
+        logMessage(LOG_ERROR, ERR_MACRO_TABLE_ALLOC_FAILED);
         fclose(state->in_fp);
         fclose(state->out_fp);
-        return -1;
+        return FALSE;
     }
-    
+
     /* Initialize state fields */
     state->line_num = 0;
     state->is_error = 0;
@@ -135,8 +135,8 @@ static int initializeResources(
     state->macro_capacity = 0;
     state->macro_length = 0;
     state->name[0] = '\0';
-    
-    return 0;
+
+    return TRUE;
 }
 
 /**
@@ -157,150 +157,145 @@ static void preprocessLine(char *line)
  * Appends a line to the macro body buffer, growing it if needed.
  * @param state holds the buffer being built
  * @param line the line to append
- * @return 1 on success, 0 on allocation failure
+ * @return TRUE on success, FALSE on allocation failure
  */
-static int appendToMacroBody(
+static Boolean appendToMacroBody(
     MacroProcessorState *state, const char *line)
 {
     int needed = state->macro_length + strlen(line) + 2;
-    
+
     while (needed > state->macro_capacity) {
         if (!resizeMacroBuffer(&state->macro_body, &state->macro_capacity)) {
-            logMessage(LOG_ERROR, "Error: Cannot resize macro body buffer\n");
-            return 0;
+            logMessage(LOG_ERROR, ERR_MACRO_BODY_RESIZE_FAILED);
+            return FALSE;
         }
     }
-    
+
     strcat(state->macro_body, line);
     strcat(state->macro_body, "\n");
     state->macro_length = strlen(state->macro_body);
-    return 1;
+    return TRUE;
 }
 
 /**
  * Handles an "mcroend" line: registers the collected macro body into the
  * macro table.
  * @param state the current processing state
- * @return 1 to continue processing, 0 to stop (error occurred)
+ * @return TRUE to continue processing, FALSE to stop (error occurred)
  */
-static int handleMcroEnd(MacroProcessorState *state)
+static Boolean handleMcroEnd(MacroProcessorState *state)
 {
-    int insert_result;
+    ResultCode insert_result;
 
     /* Full validation lives here, mirroring handleMcroStart below. */
     if (!isMcroDefinitionEnd(state->line)) {
-        logMessage(LOG_ERROR, "Error at line %d: Extra characters after 'mcroend'\n",
-                   state->line_num);
+        logMessage(LOG_ERROR, ERR_MCROEND_TRAILING_CHARS, state->line_num);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     if (!state->in_macro) {
-        logMessage(LOG_ERROR, "Error at line %d: 'mcroend' without matching 'mcro'\n",
-                   state->line_num);
+        logMessage(LOG_ERROR, ERR_MCROEND_WITHOUT_MCRO, state->line_num);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     state->in_macro = 0;
 
     insert_result = insertMacro(state->macro_table, state->name, state->macro_body);
 
-    if (insert_result == 0) {
-        logMessage(LOG_DEBUG, "Line %d: End of macro '%s'\n", state->line_num, state->name);
-        logMessage(LOG_DEBUG, "Macro '%s' registered in table\n", state->name);
+    switch (insert_result) {
+        case RC_SUCCESS:
+            logMessage(LOG_DEBUG, "Line %d: End of macro '%s'\n", state->line_num, state->name);
+            logMessage(LOG_DEBUG, "Macro '%s' registered in table\n", state->name);
 
-        /* Ownership of macro_body has passed to the macro table's node; drop
-         * our reference so finalizeResources() doesn't free it a second time. */
-        state->macro_body = NULL;
-        state->macro_capacity = 0;
-        state->macro_length = 0;
-        return 1;  /* Continue */
-    } else if (insert_result == -1) {
-        logMessage(LOG_ERROR, "Error at line %d: Macro '%s' already defined\n",
-                   state->line_num, state->name);
-    } else if (insert_result == -2) {
-        logMessage(LOG_ERROR, "Error: Cannot allocate memory for macro '%s'\n", state->name);
-    } else {
-        logMessage(LOG_ERROR, "Error: Unexpected internal error registering macro '%s'\n",
-                   state->name);
+            /* Ownership of macro_body has passed to the macro table's node;
+             * drop our reference so finalizeResources() doesn't free it a
+             * second time. */
+            state->macro_body = NULL;
+            state->macro_capacity = 0;
+            state->macro_length = 0;
+            return TRUE;  /* Continue */
+        case RC_DUPLICATE:
+            logMessage(LOG_ERROR, ERR_MACRO_ALREADY_DEFINED, state->line_num, state->name);
+            break;
+        case RC_OUT_OF_MEMORY:
+            logMessage(LOG_ERROR, ERR_MACRO_REGISTER_ALLOC_FAILED, state->name);
+            break;
+        default:
+            logMessage(LOG_ERROR, ERR_MACRO_REGISTER_UNEXPECTED, state->name);
+            break;
     }
 
     state->is_error = 1;
     free(state->macro_body);
     state->macro_body = NULL;
-    return 0;  /* Break */
+    return FALSE;  /* Break */
 }
 
 /**
  * Handles an "mcro <name>" line: validates the syntax and name, then
  * initializes the macro body buffer.
  * @param state the current processing state
- * @return 1 to continue processing, 0 to stop (error occurred)
+ * @return TRUE to continue processing, FALSE to stop (error occurred)
  */
-static int handleMcroStart(MacroProcessorState *state)
+static Boolean handleMcroStart(MacroProcessorState *state)
 {
     /* Rejected outright if we're already inside an unterminated macro,
      * instead of silently starting a new one and leaking/discarding the one
      * in progress -- mirrors handleMcroEnd's own !state->in_macro check. */
     if (state->in_macro) {
-        logMessage(LOG_ERROR, "Error at line %d: Nested macro definition "
-                   "('mcro' inside macro '%s', missing 'mcroend')\n",
-                   state->line_num, state->name);
+        logMessage(LOG_ERROR, ERR_MACRO_NESTED_DEFINITION, state->line_num, state->name);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     if (!isMcroDefinitionStart(state->line, state->name)) {
-        logMessage(LOG_ERROR, "Error at line %d: Invalid macro definition syntax. "
-                   "Expected: mcro <name>\n", state->line_num);
+        logMessage(LOG_ERROR, ERR_MCRO_INVALID_SYNTAX, state->line_num);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     /* Validate macro name follows label syntax: letter, then alphanumeric */
     if (!isValidSymbolName(state->name)) {
-        logMessage(LOG_ERROR, "Error at line %d: Macro name '%s' is invalid "
-                   "(must start with a letter and contain only letters/digits)\n",
-                   state->line_num, state->name);
+        logMessage(LOG_ERROR, ERR_MACRO_NAME_INVALID, state->line_num, state->name);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     /* Validate macro name is not reserved */
     if (isReservedWord(state->name)) {
-        logMessage(LOG_ERROR, "Error at line %d: Macro name '%s' is a reserved word\n",
-                   state->line_num, state->name);
+        logMessage(LOG_ERROR, ERR_MACRO_NAME_RESERVED, state->line_num, state->name);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     logMessage(LOG_DEBUG, "Line %d: Found macro definition 'mcro %s'\n",
                state->line_num, state->name);
 
     /* Initialize macro body buffer */
-    state->macro_capacity = 256;
+    state->macro_capacity = INITIAL_MACRO_BODY_CAPACITY;
     state->macro_length = 0;
     state->macro_body = (char *)malloc(state->macro_capacity);
 
     if (state->macro_body == NULL) {
-        logMessage(LOG_ERROR, "Error: Cannot allocate macro body buffer\n");
+        logMessage(LOG_ERROR, ERR_MACRO_BODY_ALLOC_FAILED);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     state->macro_body[0] = '\0';  /* Initialize as empty string */
     state->in_macro = 1;
-    return 1;  /* Continue */
+    return TRUE;  /* Continue */
 }
 
 /**
  * Handles a line that's neither a macro definition nor inside one: writes it
  * through as-is, or expands it if it's a call to a known macro.
  * @param state the current processing state
- * @return 1 to continue processing
+ * @return TRUE to continue processing
  */
-static int handleRegularLine(MacroProcessorState *state)
+static Boolean handleRegularLine(MacroProcessorState *state)
 {
     MacroNode *macro = lookupMacro(state->macro_table, state->line);
     if (macro != NULL) {
@@ -309,16 +304,16 @@ static int handleRegularLine(MacroProcessorState *state)
     } else {
         fprintf(state->out_fp, "%s\n", state->line);
     }
-    return 1;  /* Continue */
+    return TRUE;  /* Continue */
 }
 
 /**
  * Classifies one line (mcroend / mcro start / macro body / regular) and
  * dispatches to the matching handler.
  * @param state the current processing state
- * @return 1 to continue processing, 0 to stop (fatal error)
+ * @return TRUE to continue processing, FALSE to stop (fatal error)
  */
-static int processLine(MacroProcessorState *state)
+static Boolean processLine(MacroProcessorState *state)
 {
     char *first_word;
 
@@ -326,10 +321,9 @@ static int processLine(MacroProcessorState *state)
      * matches isspace(), as this call site used before getFirstToken. */
     first_word = getFirstToken(state->line, " \t\r\v\f", NULL);
     if (first_word == NULL) {
-        logMessage(LOG_ERROR, "Error: Cannot allocate memory while processing line %d\n",
-                   state->line_num);
+        logMessage(LOG_ERROR, ERR_MACRO_LINE_ALLOC_FAILED, state->line_num);
         state->is_error = 1;
-        return 0;  /* Break */
+        return FALSE;  /* Break */
     }
 
     if (strcmp(first_word, "mcroend") == 0) {
@@ -349,9 +343,9 @@ static int processLine(MacroProcessorState *state)
             state->is_error = 1;
             free(state->macro_body);
             state->macro_body = NULL;
-            return 0;  /* Break */
+            return FALSE;  /* Break */
         }
-        return 1;  /* Continue */
+        return TRUE;  /* Continue */
     }
 
     /* Regular line or macro call */
@@ -396,7 +390,7 @@ int expandMacros(const char *input_file, const char *output_file, MacroTable **m
     *macros_out = NULL;
 
     /* Initialize resources */
-    if (initializeResources(input_file, output_file, &state) < 0) {
+    if (initializeResources(input_file, output_file, &state) == FALSE) {
         return -1;  /* I/O failure */
     }
     
@@ -412,8 +406,7 @@ int expandMacros(const char *input_file, const char *output_file, MacroTable **m
          * whether a trailing newline was captured, which preprocessLine is
          * about to strip. */
         if (isLineTooLong(state.line)) {
-            logMessage(LOG_ERROR, "Error at line %d: Line exceeds maximum length of %d characters\n",
-                       state.line_num, MAX_LINE_LENGTH);
+            logMessage(LOG_ERROR, ERR_LINE_TOO_LONG, state.line_num, MAX_LINE_LENGTH);
             state.is_error = 1;
             break;
         }
@@ -434,8 +427,7 @@ int expandMacros(const char *input_file, const char *output_file, MacroTable **m
     
     /* Check for unclosed macro at EOF */
     if (state.in_macro) {
-        logMessage(LOG_ERROR, "Error: Unclosed macro '%s' - missing 'mcroend' at end of file\n",
-                   state.name);
+        logMessage(LOG_ERROR, ERR_MACRO_UNCLOSED, state.name);
         state.is_error = 1;
         if (state.macro_body != NULL) {
             free(state.macro_body);

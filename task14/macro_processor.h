@@ -48,15 +48,15 @@ int expandMacros(const char *input_file, const char *output_file, MacroTable **m
  * fit name_out.
  * @param line the line to validate
  * @param name_out receives the macro name if the line is valid
- * @return 1 if valid, 0 otherwise
+ * @return TRUE if valid, FALSE otherwise
  */
-int isMcroDefinitionStart(const char *line, char *name_out);
+Boolean isMcroDefinitionStart(const char *line, char *name_out);
 
 /**
  * Validates a "mcroend" line: exactly the word "mcroend", nothing else.
  * @param line the line to validate
- * @return 1 if valid, 0 otherwise
+ * @return TRUE if valid, FALSE otherwise
  */
-int isMcroDefinitionEnd(const char *line);
+Boolean isMcroDefinitionEnd(const char *line);
 
 #endif /* MACRO_PROCESSOR_H */

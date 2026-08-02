@@ -48,41 +48,41 @@ DataDirectiveList* createDataDirectiveList(void)
     return list;
 }
 
-int appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node)
+Boolean appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node)
 {
     if (list == NULL || node == NULL) {
-        return -1;
+        return FALSE;
     }
 
     if (list->count == list->capacity) {
         if (!growArray((void **)&list->items, &list->capacity, sizeof(DataDirectiveNode *))) {
-            return -1;
+            return FALSE;
         }
     }
 
     list->items[list->count] = node;
     list->count++;
-    return 0;
+    return TRUE;
 }
 
-int appendDirectiveValue(DataDirectiveNode *node, long value)
+Boolean appendDirectiveValue(DataDirectiveNode *node, long value)
 {
     if (node->values == NULL) {
         node->values = (long *)malloc(sizeof(long) * INITIAL_LIST_CAPACITY);
         if (node->values == NULL) {
-            return -1;
+            return FALSE;
         }
         node->value_capacity = INITIAL_LIST_CAPACITY;
         node->value_count = 0;
     } else if (node->value_count == node->value_capacity) {
         if (!growArray((void **)&node->values, &node->value_capacity, sizeof(long))) {
-            return -1;
+            return FALSE;
         }
     }
 
     node->values[node->value_count] = value;
     node->value_count++;
-    return 0;
+    return TRUE;
 }
 
 void relocateDataDirectiveAddresses(DataDirectiveList *list, int icf)
@@ -117,13 +117,13 @@ void destroyDataDirectiveList(DataDirectiveList *list)
 
 char* dataDirectiveNodeToString(const DataDirectiveNode *node)
 {
-    char buffer[1024];
+    char buffer[BUFF_SIZE];
     int pos = 0;
     int i;
     char *result;
 
     if (node == NULL) {
-        result = (char *)malloc(30);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[DataDirectiveNode: NULL]\n");
         }
@@ -136,7 +136,7 @@ char* dataDirectiveNodeToString(const DataDirectiveNode *node)
 
     /* Bounded like dataDirectiveListToString's own loop -- value_count is
      * unbounded, and without this, pos could run past buffer's end. */
-    for (i = 0; i < node->value_count && pos < (int)sizeof(buffer) - 100; i++) {
+    for (i = 0; i < node->value_count && pos < BUFF_SIZE - VALUE_LIST_MARGIN; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s%ld",
                         i > 0 ? "," : "", node->values[i]);
     }
@@ -153,14 +153,14 @@ char* dataDirectiveNodeToString(const DataDirectiveNode *node)
 
 char* dataDirectiveListToString(const DataDirectiveList *list)
 {
-    char buffer[8192];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     int i;
     char *node_str;
     char *result;
 
     if (list == NULL) {
-        result = (char *)malloc(50);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[DataDirectiveList: NULL]\n");
         }
@@ -170,7 +170,7 @@ char* dataDirectiveListToString(const DataDirectiveList *list)
     pos += snprintf(buffer + pos, sizeof(buffer) - pos,
                     "[DataDirectiveList: %d directives]\n", list->count);
 
-    for (i = 0; i < list->count && pos < (int)sizeof(buffer) - 500; i++) {
+    for (i = 0; i < list->count && pos < LARGE_BUFF_SIZE - NODE_DUMP_MARGIN; i++) {
         node_str = dataDirectiveNodeToString(list->items[i]);
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s", node_str);
         free(node_str);

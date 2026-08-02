@@ -33,10 +33,10 @@ EntryList* createEntryList(void);
  * @param list the entry list
  * @param line_number source line of the .entry directive
  * @param symbol_name the symbol it names
- * @return 0 on success, -1 on allocation failure or if symbol_name is longer
- *         than MAX_LABEL_LENGTH
+ * @return TRUE on success, FALSE on allocation failure or if symbol_name is
+ *         longer than MAX_LABEL_LENGTH
  */
-int appendEntry(EntryList *list, int line_number, const char *symbol_name);
+Boolean appendEntry(EntryList *list, int line_number, const char *symbol_name);
 
 /**
  * Frees the backing array and the list itself.

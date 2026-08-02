@@ -10,6 +10,7 @@
 #define GROWABLE_ARRAY_H
 
 #include <stddef.h>
+#include "common.h"
 
 /**
  * Doubles the capacity of a growable array. Reallocates *items to
@@ -19,8 +20,8 @@
  * @param items pointer to the buffer pointer to grow
  * @param capacity pointer to its current capacity (in elements)
  * @param element_size size of one element in bytes
- * @return 1 on success, 0 on allocation failure
+ * @return TRUE on success, FALSE on allocation failure
  */
-int growArray(void **items, int *capacity, size_t element_size);
+Boolean growArray(void **items, int *capacity, size_t element_size);
 
 #endif /* GROWABLE_ARRAY_H */

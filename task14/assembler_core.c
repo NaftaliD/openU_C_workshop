@@ -20,22 +20,23 @@
  * @param as_filename the source .as path
  * @param am_filename_out receives the derived path; must hold at least
  *        MAX_FILENAME_LENGTH bytes
- * @return 1 on success, 0 if as_filename is too long for am_filename_out
- *         (base name + ".am" + terminator must fit in MAX_FILENAME_LENGTH)
+ * @return TRUE on success, FALSE if as_filename is too long for
+ *         am_filename_out (base name + AM_FILE_EXTENSION + terminator must
+ *         fit in MAX_FILENAME_LENGTH)
  */
-static int deriveAmFilename(const char *as_filename, char *am_filename_out)
+static Boolean deriveAmFilename(const char *as_filename, char *am_filename_out)
 {
     const char *dot_pos = strrchr(as_filename, '.');
     int base_length = dot_pos != NULL ? (int)(dot_pos - as_filename) : (int)strlen(as_filename);
 
-    if (base_length > MAX_FILENAME_LENGTH - 4) { /* 4 = strlen(".am") + '\0' */
-        return 0;
+    if (base_length > MAX_FILENAME_LENGTH - (int)sizeof(AM_FILE_EXTENSION)) {
+        return FALSE;
     }
 
     strncpy(am_filename_out, as_filename, base_length);
     am_filename_out[base_length] = '\0';
-    strcat(am_filename_out, ".am");
-    return 1;
+    strcat(am_filename_out, AM_FILE_EXTENSION);
+    return TRUE;
 }
 
 /**
@@ -83,10 +84,10 @@ static void dumpPassOneResults(const AssemblerContext *context)
  * @param as_filename source .as path
  * @param am_filename destination .am path
  * @param context the assembler context to populate
- * @return 1 to continue to Pass One, 0 to skip this file
+ * @return TRUE to continue to Pass One, FALSE to skip this file
  */
-static int runMacroExpansionStep(const char *as_filename, const char *am_filename,
-                                  AssemblerContext *context)
+static Boolean runMacroExpansionStep(const char *as_filename, const char *am_filename,
+                                      AssemblerContext *context)
 {
     int status;
 
@@ -94,16 +95,16 @@ static int runMacroExpansionStep(const char *as_filename, const char *am_filenam
     status = expandMacros(as_filename, am_filename, &context->macros);
 
     if (status > 0) {
-        logMessage(LOG_ERROR, "Error: Macro processor failed for %s\n", as_filename);
-        return 0;
+        logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_FAILED, as_filename);
+        return FALSE;
     }
     if (status < 0) {
-        logMessage(LOG_ERROR, "Error: Could not process %s (file I/O error)\n", as_filename);
-        return 0;
+        logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_IO_FAILED, as_filename);
+        return FALSE;
     }
 
     logMessage(LOG_INFO, "  Macro expansion successful. Output: %s\n", am_filename);
-    return 1;
+    return TRUE;
 }
 
 /**
@@ -111,16 +112,16 @@ static int runMacroExpansionStep(const char *as_filename, const char *am_filenam
  * @param as_filename source .as path, for error messages
  * @param am_filename expanded .am path to read
  * @param context the assembler context to populate
- * @return 1 if Pass One completed with no errors, 0 otherwise
+ * @return TRUE if Pass One completed with no errors, FALSE otherwise
  */
-static int runPassOneStep(const char *as_filename, const char *am_filename,
-                           AssemblerContext *context)
+static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
+                               AssemblerContext *context)
 {
     logMessage(LOG_INFO, "  [2] Running Pass One...\n");
 
     if (runPassOne(am_filename, context) < 0) {
-        logMessage(LOG_ERROR, "Error: Could not open %s for Pass One\n", am_filename);
-        return 0;
+        logMessage(LOG_ERROR, ERR_PASS_ONE_OPEN_FAILED, am_filename);
+        return FALSE;
     }
 
     logMessage(LOG_INFO, "  Pass One done: IC=%d, DC=%d, %d error(s)\n",
@@ -128,22 +129,22 @@ static int runPassOneStep(const char *as_filename, const char *am_filename,
     dumpPassOneResults(context);
 
     if (errorListHasErrors(context->errors)) {
-        logMessage(LOG_ERROR, "Error: Pass One failed for %s (%d error(s))\n",
-                   as_filename, context->errors->count);
-        return 0;
+        logMessage(LOG_ERROR, ERR_PASS_ONE_FAILED, as_filename, context->errors->count);
+        return FALSE;
     }
 
-    return 1;
+    return TRUE;
 }
 
 /**
  * @param filename a file path
- * @return 1 if filename ends with ".as", 0 otherwise
+ * @return TRUE if filename ends with AS_FILE_EXTENSION, FALSE otherwise
  */
-static int hasAsExtension(const char *filename)
+static Boolean hasAsExtension(const char *filename)
 {
+    size_t ext_len = sizeof(AS_FILE_EXTENSION) - 1; /* excludes the null terminator */
     size_t length = strlen(filename);
-    return length >= 3 && strcmp(filename + length - 3, ".as") == 0;
+    return length >= ext_len && strcmp(filename + length - ext_len, AS_FILE_EXTENSION) == 0;
 }
 
 /**
@@ -158,18 +159,18 @@ static void processFile(const char *as_filename)
     AssemblerContext *context;
 
     if (!hasAsExtension(as_filename)) {
-        logMessage(LOG_ERROR, "Error: %s does not have a .as extension\n", as_filename);
+        logMessage(LOG_ERROR, ERR_MISSING_AS_EXTENSION, as_filename);
         return;
     }
 
     context = createAssemblerContext();
     if (context == NULL) {
-        logMessage(LOG_ERROR, "Error: Out of memory processing %s\n", as_filename);
+        logMessage(LOG_ERROR, ERR_FILE_OUT_OF_MEMORY, as_filename);
         return;
     }
 
     if (!deriveAmFilename(as_filename, am_filename)) {
-        logMessage(LOG_ERROR, "Error: Filename too long: %s\n", as_filename);
+        logMessage(LOG_ERROR, ERR_FILENAME_TOO_LONG, as_filename);
         destroyAssemblerContext(context);
         return;
     }
@@ -200,7 +201,7 @@ int main(int argc, char *argv[])
     int i;
 
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <file1.as> [file2.as] ...\n", argv[0]);
+        fprintf(stderr, USAGE_MESSAGE, argv[0]);
         return 1;
     }
 

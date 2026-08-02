@@ -1,19 +1,18 @@
 /*
  * macro_table.h
- * Macro table management - storage and retrieval of macro definitions.
- * 
- * Each macro stores its name and source lines.
- * All macros are stored in a linked list.
+ * Macro definitions, stored as a linked list (name + body).
  */
 
 #ifndef MACRO_TABLE_H
 #define MACRO_TABLE_H
 
+#include "common.h"
+
 /* Single macro definition */
 typedef struct MacroNode {
-    char name[32];           /* Macro name */
-    char *body;              /* Macro body as single string with embedded newlines */
-    struct MacroNode *next;  /* Next macro in linked list */
+    char name[MAX_MACRO_NAME_LENGTH + 1];
+    char *body;              /* single string, embedded newlines between lines */
+    struct MacroNode *next;
 } MacroNode;
 
 /* Macro table (linked list head) */
@@ -33,10 +32,10 @@ MacroTable* createMacroTable(void);
  * @param table the macro table
  * @param name the macro's name
  * @param body the macro's body, as a single string with embedded newlines
- * @return 0 on success, -1 if a macro with that name already exists, -2 on
- *         allocation failure
+ * @return RC_SUCCESS, RC_INVALID for a NULL argument, RC_DUPLICATE if a
+ *         macro with that name already exists, or RC_OUT_OF_MEMORY
  */
-int insertMacro(MacroTable *table, const char *name, char *body);
+ResultCode insertMacro(MacroTable *table, const char *name, char *body);
 
 /**
  * Searches for a macro by name.

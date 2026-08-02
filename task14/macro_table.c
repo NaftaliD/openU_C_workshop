@@ -19,29 +19,29 @@ MacroTable* createMacroTable(void)
     return table;
 }
 
-int insertMacro(MacroTable *table, const char *name, char *body)
+ResultCode insertMacro(MacroTable *table, const char *name, char *body)
 {
     MacroNode *node;
 
     if (table == NULL || name == NULL || body == NULL) {
-        return -1;
+        return RC_INVALID;
     }
 
     /* Check if macro already exists using lookup */
     if (lookupMacro(table, name) != NULL) {
-        return -1;  /* Already defined */
+        return RC_DUPLICATE;
     }
-    
+
     /* Allocate new macro node */
     node = (MacroNode *)malloc(sizeof(MacroNode));
-    if (node == NULL) return -2;
-    
+    if (node == NULL) return RC_OUT_OF_MEMORY;
+
     strcpy(node->name, name);
     node->body = body;
     node->next = table->head;
     table->head = node;
-    
-    return 0;
+
+    return RC_SUCCESS;
 }
 
 MacroNode* lookupMacro(MacroTable *table, const char *name)
@@ -81,13 +81,15 @@ void destroyMacroTable(MacroTable *table)
 
 char* macroNodeToString(const MacroNode *node)
 {
-    char buffer[4096];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     char *result;
-    
+
     if (node == NULL) {
-        result = (char *)malloc(50);
-        strcpy(result, "[MacroNode: NULL]\n");
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
+        if (result != NULL) {
+            strcpy(result, "[MacroNode: NULL]\n");
+        }
         return result;
     }
     
@@ -104,16 +106,18 @@ char* macroNodeToString(const MacroNode *node)
 
 char* macroTableToString(const MacroTable *table)
 {
-    char buffer[8192];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     MacroNode *current;
     int count = 0;
     char *node_str;
     char *result;
-    
+
     if (table == NULL) {
-        result = (char *)malloc(50);
-        strcpy(result, "[MacroTable: NULL]\n");
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
+        if (result != NULL) {
+            strcpy(result, "[MacroTable: NULL]\n");
+        }
         return result;
     }
     
@@ -128,7 +132,7 @@ char* macroTableToString(const MacroTable *table)
                     "[MacroTable: %d macros]\n", count);
     
     current = table->head;
-    while (current != NULL && pos < sizeof(buffer) - 500) {
+    while (current != NULL && pos < LARGE_BUFF_SIZE - NODE_DUMP_MARGIN) {
         node_str = macroNodeToString(current);
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s", node_str);
         free(node_str);

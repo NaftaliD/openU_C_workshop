@@ -29,16 +29,16 @@ ErrorList* createErrorList(void)
     return list;
 }
 
-int appendError(ErrorList *list, int line_number, const char *message)
+Boolean appendError(ErrorList *list, int line_number, const char *message)
 {
     if (list == NULL || message == NULL) {
-        return -1;
+        return FALSE;
     }
 
     if (list->count == list->capacity) {
         if (!growArray((void **)&list->items, &list->capacity, sizeof(ErrorNode))) {
             list->had_fatal_error = 1;
-            return -1;
+            return FALSE;
         }
     }
 
@@ -46,13 +46,13 @@ int appendError(ErrorList *list, int line_number, const char *message)
     strncpy(list->items[list->count].message, message, MAX_ERROR_MESSAGE_LENGTH - 1);
     list->items[list->count].message[MAX_ERROR_MESSAGE_LENGTH - 1] = '\0';
     list->count++;
-    return 0;
+    return TRUE;
 }
 
-int errorListHasErrors(const ErrorList *list)
+Boolean errorListHasErrors(const ErrorList *list)
 {
     if (list == NULL) {
-        return 0;
+        return FALSE;
     }
     return list->count > 0 || list->had_fatal_error;
 }
@@ -69,13 +69,13 @@ void destroyErrorList(ErrorList *list)
 
 char* errorListToString(const ErrorList *list)
 {
-    char buffer[8192];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     int i;
     char *result;
 
     if (list == NULL) {
-        result = (char *)malloc(30);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[ErrorList: NULL]\n");
         }
@@ -86,7 +86,7 @@ char* errorListToString(const ErrorList *list)
                     "[ErrorList: %d error(s), had_fatal_error=%d]\n",
                     list->count, list->had_fatal_error);
 
-    for (i = 0; i < list->count && pos < (int)sizeof(buffer) - 200; i++) {
+    for (i = 0; i < list->count && pos < LARGE_BUFF_SIZE - ERROR_LIST_MARGIN; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "  line %d: %s\n",
                         list->items[i].line_number, list->items[i].message);
     }

@@ -57,20 +57,22 @@ SymbolNode* lookupSymbol(SymbolTable *table, const char *name);
  * @param name the symbol's name
  * @param value the symbol's address (0 for SYMBOL_TYPE_EXTERNAL)
  * @param type the symbol's origin: CODE, DATA, or EXTERNAL
- * @return 0 on success, -1 if the name already exists or is longer than
- *         MAX_LABEL_LENGTH, -2 on allocation failure
+ * @return RC_SUCCESS, RC_INVALID for a NULL argument or a name longer than
+ *         MAX_LABEL_LENGTH, RC_OUT_OF_MEMORY on allocation failure, 
+ *         RC_DUPLICATE if the name already exists
  */
-int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type);
+ResultCode insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type);
 
 /**
- * Marks an existing symbol as entry.
+ * Marks an existing symbol as entry. A repeat .entry reports RC_DUPLICATE 
+ * so the .ent writer can skip emitting a second line for the same symbol.
  * @param table the symbol table
  * @param name the symbol to mark
- * @return 0 if newly marked, 1 if it was already marked entry (a redundant
- *         but not erroneous repeat .entry declaration), -1 if not found or
- *         if its type is EXTERNAL
+ * @return RC_SUCCESS if newly marked, RC_DUPLICATE if already marked,
+ *         RC_NOT_FOUND if no such symbol exists, RC_CONFLICT if it exists
+ *         but is SYMBOL_TYPE_EXTERNAL (entry+extern on the same symbol is an error)
  */
-int markEntry(SymbolTable *table, const char *name);
+ResultCode markEntry(SymbolTable *table, const char *name);
 
 /**
  * Adds icf to every symbol whose type is SYMBOL_TYPE_DATA. Called once,

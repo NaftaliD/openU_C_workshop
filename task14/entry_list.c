@@ -28,26 +28,26 @@ EntryList* createEntryList(void)
     return list;
 }
 
-int appendEntry(EntryList *list, int line_number, const char *symbol_name)
+Boolean appendEntry(EntryList *list, int line_number, const char *symbol_name)
 {
     if (list == NULL || symbol_name == NULL) {
-        return -1;
+        return FALSE;
     }
 
     if (strlen(symbol_name) > MAX_LABEL_LENGTH) {
-        return -1;
+        return FALSE;
     }
 
     if (list->count == list->capacity) {
         if (!growArray((void **)&list->items, &list->capacity, sizeof(EntryNode))) {
-            return -1;
+            return FALSE;
         }
     }
 
     list->items[list->count].line_number = line_number;
     strcpy(list->items[list->count].symbol_name, symbol_name);
     list->count++;
-    return 0;
+    return TRUE;
 }
 
 void destroyEntryList(EntryList *list)
@@ -62,13 +62,13 @@ void destroyEntryList(EntryList *list)
 
 char* entryListToString(const EntryList *list)
 {
-    char buffer[4096];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     int i;
     char *result;
 
     if (list == NULL) {
-        result = (char *)malloc(30);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[EntryList: NULL]\n");
         }
@@ -78,7 +78,7 @@ char* entryListToString(const EntryList *list)
     pos += snprintf(buffer + pos, sizeof(buffer) - pos,
                     "[EntryList: %d entries]\n", list->count);
 
-    for (i = 0; i < list->count && pos < (int)sizeof(buffer) - 100; i++) {
+    for (i = 0; i < list->count && pos < LARGE_BUFF_SIZE - SIMPLE_LINE_MARGIN; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "  line %d: %s\n",
                         list->items[i].line_number, list->items[i].symbol_name);
     }

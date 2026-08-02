@@ -46,12 +46,12 @@ typedef union {
  * @param rest_out receives a pointer to the remainder of line after the label
  * @param line_number for error reporting
  * @param errors error accumulator for invalid label syntax
- * @return 1 if a label was consumed, 0 if no label prefix was present, -1 if
- *         an invalid label prefix was present (an error was appended, but
- *         *rest_out still lets parsing continue)
+ * @return TRUE if a label was found and consumed, FALSE otherwise (no label
+ *         prefix, or an invalid one -- *rest_out still lets parsing continue
+ *         either way, and an error was appended for the invalid case)
  */
-int extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
-                  int line_number, ErrorList *errors);
+Boolean extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
+                      int line_number, ErrorList *errors);
 
 /**
  * Single entry point: classifies one line and parses it into out, selecting

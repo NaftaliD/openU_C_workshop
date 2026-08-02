@@ -33,21 +33,21 @@ OperationList* createOperationList(void)
     return list;
 }
 
-int appendOperation(OperationList *list, OperationNode *node)
+Boolean appendOperation(OperationList *list, OperationNode *node)
 {
     if (list == NULL || node == NULL) {
-        return -1;
+        return FALSE;
     }
 
     if (list->count == list->capacity) {
         if (!growArray((void **)&list->items, &list->capacity, sizeof(OperationNode *))) {
-            return -1;
+            return FALSE;
         }
     }
 
     list->items[list->count] = node;
     list->count++;
-    return 0;
+    return TRUE;
 }
 
 void destroyOperationList(OperationList *list)
@@ -90,14 +90,14 @@ static void operandToString(const Operand *operand, char *buffer, size_t buffer_
 
 char* operationNodeToString(const OperationNode *node)
 {
-    char buffer[512];
-    char operand_buf[40];
+    char buffer[BUFF_SIZE];
+    char operand_buf[MAX_OPERAND_STRING_LENGTH];
     int pos = 0;
     int i;
     char *result;
 
     if (node == NULL) {
-        result = (char *)malloc(30);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[OperationNode: NULL]\n");
         }
@@ -126,14 +126,14 @@ char* operationNodeToString(const OperationNode *node)
 
 char* operationListToString(const OperationList *list)
 {
-    char buffer[8192];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     int i;
     char *node_str;
     char *result;
 
     if (list == NULL) {
-        result = (char *)malloc(50);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[OperationList: NULL]\n");
         }
@@ -143,7 +143,7 @@ char* operationListToString(const OperationList *list)
     pos += snprintf(buffer + pos, sizeof(buffer) - pos,
                     "[OperationList: %d operations]\n", list->count);
 
-    for (i = 0; i < list->count && pos < (int)sizeof(buffer) - 500; i++) {
+    for (i = 0; i < list->count && pos < LARGE_BUFF_SIZE - NODE_DUMP_MARGIN; i++) {
         node_str = operationNodeToString(list->items[i]);
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s", node_str);
         free(node_str);

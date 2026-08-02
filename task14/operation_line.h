@@ -61,9 +61,9 @@ OperationList* createOperationList(void);
  * Appends node, growing the list if needed. Takes ownership of node.
  * @param list the operation list
  * @param node the node to append
- * @return 0 on success, -1 on allocation failure
+ * @return TRUE on success, FALSE on allocation failure
  */
-int appendOperation(OperationList *list, OperationNode *node);
+Boolean appendOperation(OperationList *list, OperationNode *node);
 
 /**
  * Frees every node, the backing array, and the list itself.

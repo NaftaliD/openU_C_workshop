@@ -44,23 +44,23 @@ SymbolNode* lookupSymbol(SymbolTable *table, const char *name)
     return NULL;
 }
 
-int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type)
+ResultCode insertSymbol(SymbolTable *table, const char *name, int value, SymbolType type)
 {
     if (table == NULL || name == NULL) {
-        return -1;
+        return RC_INVALID;
     }
 
     if (strlen(name) > MAX_LABEL_LENGTH) {
-        return -1;
+        return RC_INVALID;
     }
 
     if (lookupSymbol(table, name) != NULL) {
-        return -1;
+        return RC_DUPLICATE;
     }
 
     if (table->count == table->capacity) {
         if (!growArray((void **)&table->items, &table->capacity, sizeof(SymbolNode))) {
-            return -2;
+            return RC_OUT_OF_MEMORY;
         }
     }
 
@@ -70,27 +70,27 @@ int insertSymbol(SymbolTable *table, const char *name, int value, SymbolType typ
     table->items[table->count].is_entry = 0;
     table->count++;
 
-    return 0;
+    return RC_SUCCESS;
 }
 
-int markEntry(SymbolTable *table, const char *name)
+ResultCode markEntry(SymbolTable *table, const char *name)
 {
     SymbolNode *node = lookupSymbol(table, name);
 
     if (node == NULL) {
-        return -1;
+        return RC_NOT_FOUND;
     }
 
     if (node->type == SYMBOL_TYPE_EXTERNAL) {
-        return -1;
+        return RC_CONFLICT;
     }
 
     if (node->is_entry) {
-        return 1;  /* already marked -- redundant, not an error */
+        return RC_DUPLICATE;
     }
 
     node->is_entry = 1;
-    return 0;
+    return RC_SUCCESS;
 }
 
 void relocateDataSymbols(SymbolTable *table, int icf)
@@ -134,13 +134,13 @@ static const char* symbolTypeToString(SymbolType type)
 
 char* symbolTableToString(const SymbolTable *table)
 {
-    char buffer[8192];
+    char buffer[LARGE_BUFF_SIZE];
     int pos = 0;
     int i;
     char *result;
 
     if (table == NULL) {
-        result = (char *)malloc(30);
+        result = (char *)malloc(NULL_PLACEHOLDER_SIZE);
         if (result != NULL) {
             strcpy(result, "[SymbolTable: NULL]\n");
         }
@@ -150,7 +150,7 @@ char* symbolTableToString(const SymbolTable *table)
     pos += snprintf(buffer + pos, sizeof(buffer) - pos,
                     "[SymbolTable: %d symbol(s)]\n", table->count);
 
-    for (i = 0; i < table->count && pos < (int)sizeof(buffer) - 200; i++) {
+    for (i = 0; i < table->count && pos < LARGE_BUFF_SIZE - SIMPLE_LINE_MARGIN; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos,
                         "  %s = %d (%s%s)\n", table->items[i].name,
                         table->items[i].value, symbolTypeToString(table->items[i].type),

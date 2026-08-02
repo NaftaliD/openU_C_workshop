@@ -25,26 +25,26 @@ void removeComments(char *str);
 /**
  * Checks whether a line exceeds MAX_LINE_LENGTH.
  * @param str the line to check
- * @return 1 if too long, 0 otherwise
+ * @return TRUE if too long, FALSE otherwise
  */
-int isLineTooLong(const char *str);
+Boolean isLineTooLong(const char *str);
 
 /**
  * Checks whether a word is a reserved language word (mcro, mcroend, any
  * operation name, or any directive name).
  * @param word the word to check
- * @return 1 if reserved, 0 otherwise
+ * @return TRUE if reserved, FALSE otherwise
  */
-int isReservedWord(const char *word);
+Boolean isReservedWord(const char *word);
 
 /**
  * Checks a name against label/macro-name syntax: must start with a letter,
  * contain only letters/digits after that, and be at most
  * MAX_MACRO_NAME_LENGTH characters long.
  * @param name the name to validate
- * @return 1 if valid, 0 otherwise
+ * @return TRUE if valid, FALSE otherwise
  */
-int isValidSymbolName(const char *name);
+Boolean isValidSymbolName(const char *name);
 
 /**
  * Allocates and returns a copy of str (C90 has no strdup). Caller must free

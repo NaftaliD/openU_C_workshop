@@ -34,6 +34,41 @@
 #define MIN_REGISTER_NUMBER 0
 #define MAX_REGISTER_NUMBER 31
 
+#define INSTRUCTION_SIZE_BYTES 4     /* every instruction is 32 bits, always */
+#define INITIAL_MACRO_BODY_CAPACITY 256
+#define AS_FILE_EXTENSION ".as"
+#define AM_FILE_EXTENSION ".am"
+
+/* Debug-dump (*ToString) sizing -- shared by every module's debug-string
+ * builder (symbol_table.c, entry_list.c, operation_line.c,
+ * data_directive_line.c, macro_table.c, error_list.c). */
+#define BUFF_SIZE 1024              /* stack buffer for a single node/entry dump */
+#define LARGE_BUFF_SIZE (BUFF_SIZE * 8) /* stack buffer for a list-level dump (many entries concatenated) */
+#define NULL_PLACEHOLDER_SIZE 32    /* malloc size for a "[Xxx: NULL]\n" string */
+#define MAX_INT_DIGITS 11           /* worst case %d for a 32-bit int, incl. sign */
+#define MAX_LONG_DIGITS 21          /* worst case %ld for a 32-bit signed long, incl. sign */
+#define MAX_OPERAND_STRING_LENGTH (MAX_LABEL_LENGTH + 1) /* longest of $N / immediate / label text */
+#define ENTRY_DELIMITER_OVERHEAD 32 /* headroom for literal punctuation/brackets per appended entry */
+#define ERROR_LIST_MARGIN (MAX_ERROR_MESSAGE_LENGTH + MAX_INT_DIGITS + ENTRY_DELIMITER_OVERHEAD)
+#define SIMPLE_LINE_MARGIN (MAX_LABEL_LENGTH + MAX_INT_DIGITS + ENTRY_DELIMITER_OVERHEAD)
+#define VALUE_LIST_MARGIN (MAX_LONG_DIGITS + ENTRY_DELIMITER_OVERHEAD)
+#define NODE_DUMP_MARGIN (MAX_OPERANDS * MAX_OPERAND_STRING_LENGTH + MAX_INT_DIGITS * 2 + ENTRY_DELIMITER_OVERHEAD)
+
+/* Replaces each function's own ad hoc int return convention (see README.md). */
+typedef enum {
+    FALSE = 0,
+    TRUE = 1
+} Boolean;
+
+typedef enum {
+    RC_SUCCESS = 0,
+    RC_DUPLICATE,
+    RC_OUT_OF_MEMORY,
+    RC_NOT_FOUND,
+    RC_CONFLICT,
+    RC_INVALID
+} ResultCode;
+
 /* Signed storage-width ranges, shared by data-directive values (.db/.dh/.dw)
  * and instruction immediates (16-bit) wherever the same width applies. */
 #define MIN_8BIT_SIGNED (-128)
@@ -59,7 +94,7 @@
 /* Error messages: data directives (.db/.dw/.dh/.asciz) */
 #define ERR_VALUE_LIST_MISSING "Missing value list"
 #define ERR_EXPECTED_NUMBER "Expected a number"
-#define ERR_VALUE_OUT_OF_RANGE_FMT "Value out of range for %s"
+#define ERR_VALUE_OUT_OF_RANGE "Value out of range for %s"
 #define ERR_EXPECTED_COMMA_VALUES "Expected ',' between values"
 #define ERR_EXPECTED_VALUE_AFTER_COMMA "Expected a value after ','"
 #define ERR_ASCIZ_MISSING_OPEN_QUOTE "Expected '\"' to start .asciz string"
@@ -80,6 +115,40 @@
 
 /* Error messages: general */
 #define ERR_OUT_OF_MEMORY "Out of memory"
+
+/* Error messages: macro pre-assembler (macro_processor.c) -- full logMessage
+ * format strings, not plain ErrorList messages like the ones above. */
+#define ERR_MACRO_CANNOT_OPEN_INPUT "Error: Cannot open input file %s\n"
+#define ERR_MACRO_CANNOT_OPEN_OUTPUT "Error: Cannot open output file %s\n"
+#define ERR_MACRO_TABLE_ALLOC_FAILED "Error: Cannot allocate macro table\n"
+#define ERR_MACRO_BODY_RESIZE_FAILED "Error: Cannot resize macro body buffer\n"
+#define ERR_MCROEND_TRAILING_CHARS "Error at line %d: Extra characters after 'mcroend'\n"
+#define ERR_MCROEND_WITHOUT_MCRO "Error at line %d: 'mcroend' without matching 'mcro'\n"
+#define ERR_MACRO_ALREADY_DEFINED "Error at line %d: Macro '%s' already defined\n"
+#define ERR_MACRO_REGISTER_ALLOC_FAILED "Error: Cannot allocate memory for macro '%s'\n"
+#define ERR_MACRO_REGISTER_UNEXPECTED "Error: Unexpected internal error registering macro '%s'\n"
+#define ERR_MACRO_NESTED_DEFINITION "Error at line %d: Nested macro definition ('mcro' inside macro '%s', missing 'mcroend')\n"
+#define ERR_MCRO_INVALID_SYNTAX "Error at line %d: Invalid macro definition syntax. Expected: mcro <name>\n"
+#define ERR_MACRO_NAME_INVALID "Error at line %d: Macro name '%s' is invalid (must start with a letter and contain only letters/digits)\n"
+#define ERR_MACRO_NAME_RESERVED "Error at line %d: Macro name '%s' is a reserved word\n"
+#define ERR_MACRO_BODY_ALLOC_FAILED "Error: Cannot allocate macro body buffer\n"
+#define ERR_MACRO_LINE_ALLOC_FAILED "Error: Cannot allocate memory while processing line %d\n"
+#define ERR_LINE_TOO_LONG "Error at line %d: Line exceeds maximum length of %d characters\n"
+#define ERR_MACRO_UNCLOSED "Error: Unclosed macro '%s' - missing 'mcroend' at end of file\n"
+
+/* Error messages: pipeline orchestration (assembler_core.c) -- same
+ * full-string convention as above. */
+#define ERR_MACRO_PROCESSOR_FAILED "Error: Macro processor failed for %s\n"
+#define ERR_MACRO_PROCESSOR_IO_FAILED "Error: Could not process %s (file I/O error)\n"
+#define ERR_PASS_ONE_OPEN_FAILED "Error: Could not open %s for Pass One\n"
+#define ERR_PASS_ONE_FAILED "Error: Pass One failed for %s (%d error(s))\n"
+#define ERR_MISSING_AS_EXTENSION "Error: %s does not have a .as extension\n"
+#define ERR_FILE_OUT_OF_MEMORY "Error: Out of memory processing %s\n"
+#define ERR_FILENAME_TOO_LONG "Error: Filename too long: %s\n"
+#define USAGE_MESSAGE "Usage: %s <file1.as> [file2.as] ...\n"
+
+/* Diagnostic messages: logger.c */
+#define WARN_LOG_FILE_OPEN_FAILED "Warning: Cannot open debug log file %s\n"
 
 /* Complete Operation enum with all instructions from the ISA */
 typedef enum {

@@ -66,12 +66,12 @@ void removeComments(char *str)
     }
 }
 
-int isLineTooLong(const char *str)
+Boolean isLineTooLong(const char *str)
 {
     size_t len;
 
     if (str == NULL) {
-        return 0;
+        return FALSE;
     }
 
     len = strlen(str);
@@ -82,61 +82,61 @@ int isLineTooLong(const char *str)
      * matters when no newline was captured: either a truncated too-long
      * line, or a final line at EOF with no trailing newline at all. */
     if (len > 0 && str[len - 1] == '\n') {
-        return 0;
+        return FALSE;
     }
 
     return len > MAX_LINE_LENGTH;
 }
 
-int isReservedWord(const char *word)
+Boolean isReservedWord(const char *word)
 {
     if (word == NULL || strlen(word) == 0) {
-        return 0;
+        return FALSE;
     }
 
     /* Check keywords */
     if (strcmp(word, "mcro") == 0 || strcmp(word, "mcroend") == 0) {
-        return 1;
+        return TRUE;
     }
 
     /* Check if it's a valid operation */
     if (operationFromString(word) != OP_INVALID) {
-        return 1;
+        return TRUE;
     }
 
     /* Check if it's a valid directive (with leading dot) */
     if (directiveFromString(word) != DIRECTIVE_INVALID) {
-        return 1;
+        return TRUE;
     }
 
-    return 0;
+    return FALSE;
 }
 
-int isValidSymbolName(const char *name)
+Boolean isValidSymbolName(const char *name)
 {
     int i;
     int len;
 
     if (name == NULL || name[0] == '\0') {
-        return 0;
+        return FALSE;
     }
 
     len = strlen(name);
     if (len > MAX_MACRO_NAME_LENGTH) {
-        return 0;
+        return FALSE;
     }
 
     if (!isalpha((unsigned char)name[0])) {
-        return 0;
+        return FALSE;
     }
 
     for (i = 1; i < len; i++) {
         if (!isalnum((unsigned char)name[i])) {
-            return 0;
+            return FALSE;
         }
     }
 
-    return 1;
+    return TRUE;
 }
 
 char* duplicateString(const char *str)

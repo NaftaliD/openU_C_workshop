@@ -37,19 +37,19 @@ ErrorList* createErrorList(void);
  * @param list the error list
  * @param line_number source line the error occurred on
  * @param message description of the error
- * @return 0 on success, -1 on allocation failure (list->had_fatal_error is
- *         also set in that case)
+ * @return TRUE on success, FALSE on allocation failure (list->had_fatal_error
+ *         is also set in that case)
  */
-int appendError(ErrorList *list, int line_number, const char *message);
+Boolean appendError(ErrorList *list, int line_number, const char *message);
 
 /**
  * Reports whether the file this list belongs to should be treated as
  * having errors: either a real error was recorded, or appendError itself
  * once failed to grow while trying to record one.
  * @param list the error list
- * @return 1 if the file has errors (or a logging failure occurred), 0 otherwise
+ * @return TRUE if the file has errors (or a logging failure occurred), FALSE otherwise
  */
-int errorListHasErrors(const ErrorList *list);
+Boolean errorListHasErrors(const ErrorList *list);
 
 /**
  * Frees the backing array and the list itself.

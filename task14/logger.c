@@ -18,7 +18,7 @@ void initLogger(const char *filename)
 
     log_file = fopen(filename, "w");
     if (log_file == NULL) {
-        fprintf(stderr, "Warning: Cannot open debug log file %s\n", filename);
+        fprintf(stderr, WARN_LOG_FILE_OPEN_FAILED, filename);
         return;
     }
 
