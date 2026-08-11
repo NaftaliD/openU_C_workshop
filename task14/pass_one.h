@@ -75,8 +75,8 @@ LineType parseLine(const char *raw_line, int line_number,
  * context must already be allocated (see createAssemblerContext).
  * @param am_file path to the expanded .am file to read
  * @param context the assembler context to populate
- * @return 0 on success, -1 if am_file could not be opened
+ * @return TRUE on success, FALSE if am_file could not be opened
  */
-int runPassOne(const char *am_file, AssemblerContext *context);
+Boolean runPassOne(const char *am_file, AssemblerContext *context);
 
 #endif /* PASS_ONE_H */

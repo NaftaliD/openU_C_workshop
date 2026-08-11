@@ -1,7 +1,7 @@
 /*
  * assembler_core.c
  * Entry point and per-file pipeline orchestration.
- * Macro processor (pre-assembler) -> Pass One -> (TODO: Pass Two)
+ * Macro processor (pre-assembler) -> Pass One -> Pass Two (+ .ob/.ent/.ext)
  */
 
 #include <stdio.h>
@@ -11,31 +11,34 @@
 #include "utils.h"
 #include "macro_processor.h"
 #include "pass_one.h"
+#include "pass_two.h"
 #include "assembler_context.h"
 #include "logger.h"
 
 /**
- * Derives the .am path for as_filename: same base name, .am extension (if
- * as_filename has no extension, .am is simply appended).
+ * Derives an output path for as_filename: same base name, given extension
+ * (if as_filename has no extension, extension is simply appended).
  * @param as_filename the source .as path
- * @param am_filename_out receives the derived path; must hold at least
+ * @param extension the extension to append, e.g. AM_FILE_EXTENSION
+ * @param filename_out receives the derived path; must hold at least
  *        MAX_FILENAME_LENGTH bytes
  * @return TRUE on success, FALSE if as_filename is too long for
- *         am_filename_out (base name + AM_FILE_EXTENSION + terminator must
- *         fit in MAX_FILENAME_LENGTH)
+ *         filename_out (base name + extension + terminator must fit in
+ *         MAX_FILENAME_LENGTH)
  */
-static Boolean deriveAmFilename(const char *as_filename, char *am_filename_out)
+static Boolean deriveOutputFilename(const char *as_filename, const char *extension,
+                                     char *filename_out)
 {
     const char *dot_pos = strrchr(as_filename, '.');
     int base_length = dot_pos != NULL ? (int)(dot_pos - as_filename) : (int)strlen(as_filename);
 
-    if (base_length > MAX_FILENAME_LENGTH - (int)sizeof(AM_FILE_EXTENSION)) {
+    if (base_length > MAX_FILENAME_LENGTH - (int)strlen(extension) - 1) {
         return FALSE;
     }
 
-    strncpy(am_filename_out, as_filename, base_length);
-    am_filename_out[base_length] = '\0';
-    strcat(am_filename_out, AM_FILE_EXTENSION);
+    strncpy(filename_out, as_filename, base_length);
+    filename_out[base_length] = '\0';
+    strcat(filename_out, extension);
     return TRUE;
 }
 
@@ -89,18 +92,23 @@ static void dumpPassOneResults(const AssemblerContext *context)
 static Boolean runMacroExpansionStep(const char *as_filename, const char *am_filename,
                                       AssemblerContext *context)
 {
-    int status;
+    ResultCode status;
 
     logMessage(LOG_INFO, "  [1] Running macro processor...\n");
     status = expandMacros(as_filename, am_filename, &context->macros);
 
-    if (status > 0) {
-        logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_FAILED, as_filename);
-        return FALSE;
-    }
-    if (status < 0) {
-        logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_IO_FAILED, as_filename);
-        return FALSE;
+    switch (status) {
+        case RC_SUCCESS:
+            break;
+        case RC_INVALID:
+            logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_FAILED, as_filename);
+            return FALSE;
+        case RC_OUT_OF_MEMORY:
+            logMessage(LOG_ERROR, ERR_FILE_OUT_OF_MEMORY, as_filename);
+            return FALSE;
+        default: /* RC_IO_ERROR */
+            logMessage(LOG_ERROR, ERR_MACRO_PROCESSOR_IO_FAILED, as_filename);
+            return FALSE;
     }
 
     logMessage(LOG_INFO, "  Macro expansion successful. Output: %s\n", am_filename);
@@ -119,7 +127,7 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
 {
     logMessage(LOG_INFO, "  [2] Running Pass One...\n");
 
-    if (runPassOne(am_filename, context) < 0) {
+    if (runPassOne(am_filename, context) == FALSE) {
         logMessage(LOG_ERROR, ERR_PASS_ONE_OPEN_FAILED, am_filename);
         return FALSE;
     }
@@ -133,6 +141,35 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
         return FALSE;
     }
 
+    return TRUE;
+}
+
+/**
+ * Runs Pass Two and logs the outcome.
+ * @param as_filename source .as path, for error messages
+ * @param ob_filename path to write the object file to
+ * @param ent_filename path to write entry symbols to, if any exist
+ * @param ext_filename path to write external symbol usages to, if any exist
+ * @param context the assembler context, fully populated by Pass One
+ * @return TRUE if Pass Two completed with no errors, FALSE otherwise
+ */
+static Boolean runPassTwoStep(const char *as_filename, const char *ob_filename,
+                               const char *ent_filename, const char *ext_filename,
+                               AssemblerContext *context)
+{
+    logMessage(LOG_INFO, "  [3] Running Pass Two...\n");
+
+    if (runPassTwo(ob_filename, ent_filename, ext_filename, context) == FALSE) {
+        logMessage(LOG_ERROR, ERR_PASS_TWO_OPEN_FAILED, ob_filename);
+        return FALSE;
+    }
+
+    if (errorListHasErrors(context->errors)) {
+        logMessage(LOG_ERROR, ERR_PASS_TWO_FAILED, as_filename, context->errors->count);
+        return FALSE;
+    }
+
+    logMessage(LOG_INFO, "  Pass Two done. Output: %s\n", ob_filename);
     return TRUE;
 }
 
@@ -152,46 +189,52 @@ static Boolean hasAsExtension(const char *filename)
  * the whole pipeline (not just one step), since later steps consume what
  * earlier ones build -- e.g. Pass Two will need everything Pass One built.
  * @param as_filename the .as file to process
+ * @return TRUE if every step succeeded, FALSE otherwise
  */
-static void processFile(const char *as_filename)
+static Boolean processFile(const char *as_filename)
 {
     char am_filename[MAX_FILENAME_LENGTH];
+    char ob_filename[MAX_FILENAME_LENGTH];
+    char ent_filename[MAX_FILENAME_LENGTH];
+    char ext_filename[MAX_FILENAME_LENGTH];
     AssemblerContext *context;
+    Boolean rc;
 
     if (!hasAsExtension(as_filename)) {
         logMessage(LOG_ERROR, ERR_MISSING_AS_EXTENSION, as_filename);
-        return;
+        return FALSE;
     }
 
     context = createAssemblerContext();
     if (context == NULL) {
         logMessage(LOG_ERROR, ERR_FILE_OUT_OF_MEMORY, as_filename);
-        return;
+        return FALSE;
     }
 
-    if (!deriveAmFilename(as_filename, am_filename)) {
+    if (!deriveOutputFilename(as_filename, AM_FILE_EXTENSION, am_filename) ||
+        !deriveOutputFilename(as_filename, OB_FILE_EXTENSION, ob_filename) ||
+        !deriveOutputFilename(as_filename, ENT_FILE_EXTENSION, ent_filename) ||
+        !deriveOutputFilename(as_filename, EXT_FILE_EXTENSION, ext_filename)) {
         logMessage(LOG_ERROR, ERR_FILENAME_TOO_LONG, as_filename);
         destroyAssemblerContext(context);
-        return;
+        return FALSE;
     }
 
     logMessage(LOG_INFO, "Processing %s...\n", as_filename);
     logMessage(LOG_DEBUG, "\nProcessing file: %s\n", as_filename);
 
-    if (runMacroExpansionStep(as_filename, am_filename, context) &&
-        runPassOneStep(as_filename, am_filename, context)) {
-        /* TODO: Pass Two + file generation (.ob/.ent/.ext), once Pass
-         * One's grammar is real. */
-    }
+    rc = runMacroExpansionStep(as_filename, am_filename, context) &&
+         runPassOneStep(as_filename, am_filename, context) &&
+         runPassTwoStep(as_filename, ob_filename, ent_filename, ext_filename, context);
 
     destroyAssemblerContext(context);
+    return rc;
 }
 
 /**
  * Program entry point. Processes each given .as file independently through
- * the assembler pipeline (currently: macro expansion, then Pass One; Pass
- * Two and output-file generation are not wired in yet). An error in one
- * file does not stop the others from being processed.
+ * the full assembler pipeline (macro expansion, Pass One, Pass Two). An
+ * error in one file does not stop the others from being processed.
  * @param argc number of command-line arguments (including program name)
  * @param argv argument vector: argv[1..] are .as file paths
  * @return 0 on completion, 1 if no input files were given

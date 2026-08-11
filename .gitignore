@@ -66,6 +66,10 @@ dkms.conf
 /task14/*.ob
 /task14/*.ent
 /task14/*.ext
+/task14/tests/*.am
+/task14/tests/*.ob
+/task14/tests/*.ent
+/task14/tests/*.ext
 
 /task14/tests/src/
 

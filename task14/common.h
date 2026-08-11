@@ -38,6 +38,9 @@
 #define INITIAL_MACRO_BODY_CAPACITY 256
 #define AS_FILE_EXTENSION ".as"
 #define AM_FILE_EXTENSION ".am"
+#define OB_FILE_EXTENSION ".ob"
+#define ENT_FILE_EXTENSION ".ent"
+#define EXT_FILE_EXTENSION ".ext"
 
 /* Debug-dump (*ToString) sizing -- shared by every module's debug-string
  * builder (symbol_table.c, entry_list.c, operation_line.c,
@@ -66,8 +69,14 @@ typedef enum {
     RC_OUT_OF_MEMORY,
     RC_NOT_FOUND,
     RC_CONFLICT,
-    RC_INVALID
+    RC_INVALID,
+    RC_IO_ERROR
 } ResultCode;
+
+/* Bakes a macro's numeric value into a string literal at compile time, e.g.
+ * for embedding a range limit into an error message with no runtime cost. */
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
 
 /* Signed storage-width ranges, shared by data-directive values (.db/.dh/.dw)
  * and instruction immediates (16-bit) wherever the same width applies. */
@@ -108,10 +117,20 @@ typedef enum {
 
 /* Error messages: operation operands */
 #define ERR_EXPECTED_REGISTER "Expected a register operand"
-#define ERR_REGISTER_OUT_OF_RANGE "Register number out of range (0-31)"
-#define ERR_IMMEDIATE_OUT_OF_RANGE "Immediate value out of range (-32768 to 32767)"
+#define ERR_REGISTER_OUT_OF_RANGE \
+    "Register number out of range (" STRINGIFY(MIN_REGISTER_NUMBER) "-" STRINGIFY(MAX_REGISTER_NUMBER) ")"
+#define ERR_IMMEDIATE_OUT_OF_RANGE \
+    "Immediate value out of range (" STRINGIFY(MIN_16BIT_SIGNED) " to " STRINGIFY(MAX_16BIT_SIGNED) ")"
 #define ERR_EXPECTED_COMMA_OPERANDS "Expected ',' between operands"
 #define ERR_TRAILING_OPERAND_CHARS "Extra characters after operands"
+
+/* Error messages: Pass Two (pass_two.c) */
+#define ERR_UNDEFINED_SYMBOL "Undefined symbol"
+#define ERR_BRANCH_EXTERNAL "Branch target cannot be an external symbol"
+#define ERR_BRANCH_OUT_OF_RANGE \
+    "Branch distance out of range (" STRINGIFY(MIN_16BIT_SIGNED) " to " STRINGIFY(MAX_16BIT_SIGNED) ")"
+#define ERR_CANNOT_WRITE_EXT_FILE "Could not write to the .ext file"
+#define ERR_CANNOT_WRITE_ENT_FILE "Could not write to the .ent file"
 
 /* Error messages: general */
 #define ERR_OUT_OF_MEMORY "Out of memory"
@@ -142,6 +161,8 @@ typedef enum {
 #define ERR_MACRO_PROCESSOR_IO_FAILED "Error: Could not process %s (file I/O error)\n"
 #define ERR_PASS_ONE_OPEN_FAILED "Error: Could not open %s for Pass One\n"
 #define ERR_PASS_ONE_FAILED "Error: Pass One failed for %s (%d error(s))\n"
+#define ERR_PASS_TWO_OPEN_FAILED "Error: Could not open %s for Pass Two\n"
+#define ERR_PASS_TWO_FAILED "Error: Pass Two failed for %s (%d error(s))\n"
 #define ERR_MISSING_AS_EXTENSION "Error: %s does not have a .as extension\n"
 #define ERR_FILE_OUT_OF_MEMORY "Error: Out of memory processing %s\n"
 #define ERR_FILENAME_TOO_LONG "Error: Filename too long: %s\n"

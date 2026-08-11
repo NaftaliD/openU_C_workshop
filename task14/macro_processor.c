@@ -100,23 +100,24 @@ static Boolean resizeMacroBuffer(char **macro_body, int *capacity)
  * @param input_file path to the source .as file
  * @param output_file path to the .am file to create
  * @param state the state struct to initialize
- * @return TRUE on success, FALSE on I/O or allocation failure
+ * @return RC_SUCCESS, RC_IO_ERROR if either file couldn't be opened, or
+ *         RC_OUT_OF_MEMORY if the macro table couldn't be allocated
  */
-static Boolean initializeResources(
+static ResultCode initializeResources(
     const char *input_file, const char *output_file,
     MacroProcessorState *state)
 {
     state->in_fp = fopen(input_file, "r");
     if (state->in_fp == NULL) {
         logMessage(LOG_ERROR, ERR_MACRO_CANNOT_OPEN_INPUT, input_file);
-        return FALSE;
+        return RC_IO_ERROR;
     }
 
     state->out_fp = fopen(output_file, "w");
     if (state->out_fp == NULL) {
         logMessage(LOG_ERROR, ERR_MACRO_CANNOT_OPEN_OUTPUT, output_file);
         fclose(state->in_fp);
-        return FALSE;
+        return RC_IO_ERROR;
     }
 
     state->macro_table = createMacroTable();
@@ -124,7 +125,7 @@ static Boolean initializeResources(
         logMessage(LOG_ERROR, ERR_MACRO_TABLE_ALLOC_FAILED);
         fclose(state->in_fp);
         fclose(state->out_fp);
-        return FALSE;
+        return RC_OUT_OF_MEMORY;
     }
 
     /* Initialize state fields */
@@ -136,7 +137,7 @@ static Boolean initializeResources(
     state->macro_length = 0;
     state->name[0] = '\0';
 
-    return TRUE;
+    return RC_SUCCESS;
 }
 
 /**
@@ -382,16 +383,18 @@ static void finalizeResources(
     }
 }
 
-int expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out)
+ResultCode expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out)
 {
     MacroProcessorState state;
     char *table_str;
+    ResultCode init_result;
 
     *macros_out = NULL;
 
     /* Initialize resources */
-    if (initializeResources(input_file, output_file, &state) == FALSE) {
-        return -1;  /* I/O failure */
+    init_result = initializeResources(input_file, output_file, &state);
+    if (init_result != RC_SUCCESS) {
+        return init_result;  /* RC_IO_ERROR or RC_OUT_OF_MEMORY */
     }
     
     logMessage(LOG_DEBUG, "=== MACRO PROCESSOR START ===\n");
@@ -454,5 +457,5 @@ int expandMacros(const char *input_file, const char *output_file, MacroTable **m
         *macros_out = state.macro_table;
     }
 
-    return state.is_error;
+    return state.is_error ? RC_INVALID : RC_SUCCESS;
 }

@@ -10,10 +10,10 @@ OBJDIR = build_artifacts
 
 SOURCES = assembler_core.c utils.c common.c macro_processor.c macro_table.c logger.c \
           growable_array.c operation_line.c data_directive_line.c \
-          entry_list.c error_list.c symbol_table.c pass_one.c assembler_context.c
+          entry_list.c error_list.c symbol_table.c pass_one.c pass_two.c assembler_context.c
 HEADERS = common.h utils.h macro_processor.h macro_table.h logger.h \
           growable_array.h operation_line.h data_directive_line.h \
-          entry_list.h error_list.h symbol_table.h pass_one.h assembler_context.h
+          entry_list.h error_list.h symbol_table.h pass_one.h pass_two.h assembler_context.h
 
 # Object files - kept out of the source tree in build_artifacts/; the
 # executable itself stays at the top level since it's the deliverable.

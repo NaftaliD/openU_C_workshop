@@ -842,7 +842,7 @@ static void handleExternLine(AssemblerContext *context, const char *symbol_name,
     }
 }
 
-int runPassOne(const char *am_file, AssemblerContext *context)
+Boolean runPassOne(const char *am_file, AssemblerContext *context)
 {
     FILE *fp;
     char line[LINE_BUFFER_SIZE];
@@ -855,7 +855,7 @@ int runPassOne(const char *am_file, AssemblerContext *context)
 
     fp = fopen(am_file, "r");
     if (fp == NULL) {
-        return -1;
+        return FALSE;
     }
 
     /* .am lines already had comments/blank lines removed and were trimmed
@@ -925,5 +925,5 @@ int runPassOne(const char *am_file, AssemblerContext *context)
     relocateDataSymbols(context->symbols, ic);
     relocateDataDirectiveAddresses(context->directives, ic);
 
-    return 0;
+    return TRUE;
 }

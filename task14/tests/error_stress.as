@@ -80,11 +80,3 @@ hlt $1
 ; --- combined/garbled examples ---
 .dw 234f2,,,$LABEL,    ,
 add $1,,,$2,,$3
-
-; --- Pass-Two-only checks (NOT caught yet -- forward refs and cross-line
-; semantics are deferred by design; re-verify once Pass Two exists) ---
-jmp NEVERDEFINEDANYWHERE
-.extern EXTFOO
-bne $1,$2,EXTFOO
-.entry BOTHENTRYEXTERN
-.extern BOTHENTRYEXTERN

@@ -39,9 +39,10 @@ typedef struct {
  *                    destroying it via destroyMacroTable -- Pass One needs
  *                    it to reject a label reusing a macro name); NULL on
  *                    any failure
- * @return 0 on success, 1 if an error was found, -1 on I/O failure
+ * @return RC_SUCCESS, RC_INVALID if a syntax error was found in the source,
+ *         RC_IO_ERROR if a file couldn't be opened, or RC_OUT_OF_MEMORY
  */
-int expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out);
+ResultCode expandMacros(const char *input_file, const char *output_file, MacroTable **macros_out);
 
 /**
  * Validates a "mcro <name>" line: exactly two tokens, name short enough to
