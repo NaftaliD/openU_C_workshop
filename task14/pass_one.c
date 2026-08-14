@@ -862,7 +862,9 @@ Boolean runPassOne(const char *am_file, AssemblerContext *context)
      * by the pre-assembler -- only fgets's trailing newline needs stripping. */
     while (fgets(line, LINE_BUFFER_SIZE, fp) != NULL) {
         line_number++;
-        trimWhitespace(line);
+        if (strlen(line) > 0 && line[strlen(line) - 1] == '\n') {
+            line[strlen(line) - 1] = '\0';
+        }
         if (line[0] == '\0') {
             continue;
         }

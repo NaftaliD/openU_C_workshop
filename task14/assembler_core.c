@@ -44,22 +44,12 @@ static Boolean deriveOutputFilename(const char *as_filename, const char *extensi
 
 /**
  * Dumps every Pass One result held in context to the debug log (file only)
- * -- a placeholder for real .ob/.ent/.ext generation, which needs Pass
- * Two's encoding to exist first.
  * @param context the populated assembler context
  */
 static void dumpPassOneResults(const AssemblerContext *context)
 {
     char *dump;
-
-    /* Gated here, not just left to logMessage: building these means
-     * walking every list with a malloc/snprintf/free per node, which isn't
-     * worth paying for on every run just to have logMessage throw it away
-     * when debug logging is off. */
-    if (!IS_DEBUG) {
-        return;
-    }
-
+    
     dump = symbolTableToString(context->symbols);
     logMessage(LOG_DEBUG, "%s", dump);
     free(dump);
@@ -134,7 +124,10 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
 
     logMessage(LOG_INFO, "  Pass One done: IC=%d, DC=%d, %d error(s)\n",
                context->icf, context->dcf, context->errors->count);
-    dumpPassOneResults(context);
+
+    if (IS_DEBUG) {
+        dumpPassOneResults(context);
+    }
 
     if (errorListHasErrors(context->errors)) {
         logMessage(LOG_ERROR, ERR_PASS_ONE_FAILED, as_filename, context->errors->count);

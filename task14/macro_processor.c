@@ -150,8 +150,8 @@ static void preprocessLine(char *line)
     if (strlen(line) > 0 && line[strlen(line) - 1] == '\n') {
         line[strlen(line) - 1] = '\0';
     }
-    trimWhitespace(line);
     removeComments(line);
+    trimWhitespace(line);
 }
 
 /**
@@ -191,13 +191,11 @@ static Boolean handleMcroEnd(MacroProcessorState *state)
     /* Full validation lives here, mirroring handleMcroStart below. */
     if (!isMcroDefinitionEnd(state->line)) {
         logMessage(LOG_ERROR, ERR_MCROEND_TRAILING_CHARS, state->line_num);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
     if (!state->in_macro) {
         logMessage(LOG_ERROR, ERR_MCROEND_WITHOUT_MCRO, state->line_num);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
@@ -228,7 +226,6 @@ static Boolean handleMcroEnd(MacroProcessorState *state)
             break;
     }
 
-    state->is_error = 1;
     free(state->macro_body);
     state->macro_body = NULL;
     return FALSE;  /* Break */
@@ -247,27 +244,23 @@ static Boolean handleMcroStart(MacroProcessorState *state)
      * in progress -- mirrors handleMcroEnd's own !state->in_macro check. */
     if (state->in_macro) {
         logMessage(LOG_ERROR, ERR_MACRO_NESTED_DEFINITION, state->line_num, state->name);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
     if (!isMcroDefinitionStart(state->line, state->name)) {
         logMessage(LOG_ERROR, ERR_MCRO_INVALID_SYNTAX, state->line_num);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
     /* Validate macro name follows label syntax: letter, then alphanumeric */
     if (!isValidSymbolName(state->name)) {
         logMessage(LOG_ERROR, ERR_MACRO_NAME_INVALID, state->line_num, state->name);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
     /* Validate macro name is not reserved */
     if (isReservedWord(state->name)) {
         logMessage(LOG_ERROR, ERR_MACRO_NAME_RESERVED, state->line_num, state->name);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
@@ -281,7 +274,6 @@ static Boolean handleMcroStart(MacroProcessorState *state)
 
     if (state->macro_body == NULL) {
         logMessage(LOG_ERROR, ERR_MACRO_BODY_ALLOC_FAILED);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
@@ -323,7 +315,6 @@ static Boolean processLine(MacroProcessorState *state)
     first_word = getFirstToken(state->line, " \t\r\v\f", NULL);
     if (first_word == NULL) {
         logMessage(LOG_ERROR, ERR_MACRO_LINE_ALLOC_FAILED, state->line_num);
-        state->is_error = 1;
         return FALSE;  /* Break */
     }
 
@@ -341,7 +332,6 @@ static Boolean processLine(MacroProcessorState *state)
     /* Inside a macro: collect lines */
     if (state->in_macro) {
         if (!appendToMacroBody(state, state->line)) {
-            state->is_error = 1;
             free(state->macro_body);
             state->macro_body = NULL;
             return FALSE;  /* Break */
@@ -424,6 +414,7 @@ ResultCode expandMacros(const char *input_file, const char *output_file, MacroTa
         
         /* Process the line and check for continuance */
         if (!processLine(&state)) {
+            state.is_error = 1;
             break;  /* Fatal error, stop processing */
         }
     }
