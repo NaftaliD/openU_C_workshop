@@ -252,8 +252,8 @@ static Boolean handleMcroStart(MacroProcessorState *state)
         return FALSE;  /* Break */
     }
 
-    /* Validate macro name follows label syntax: letter, then alphanumeric */
-    if (!isValidSymbolName(state->name)) {
+
+    if (!isValidMacroName(state->name)) {
         logMessage(LOG_ERROR, ERR_MACRO_NAME_INVALID, state->line_num, state->name);
         return FALSE;  /* Break */
     }

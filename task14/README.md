@@ -6,8 +6,7 @@ they look like judgment calls while reading.
 ## Macro names
 
 The spec never gives syntax rules for macro names, only that they can't be a
-reserved word. We apply the same rule as label names: must start with a
-letter, then letters/digits only, no underscores, max 31 characters.
+reserved word. We apply the rule must start with a letter, then letters/digits/underscores, max 31 characters.
 
 ## Macro name vs. symbol collisions
 
@@ -52,6 +51,5 @@ runs.
 
 ## Status
 
-Macro expansion (pre-assembler) and Pass One (grammar + driver) are done.
-Pass Two and the output file generator (.ob/.ent/.ext) are not implemented
-yet.
+The full pipeline is implemented: macro expansion (pre-assembler), Pass One,
+Pass Two, and output file generation (.ob/.ent/.ext).

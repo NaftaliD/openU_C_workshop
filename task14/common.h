@@ -17,7 +17,7 @@
 
 #define MAX_LINE_LENGTH 80
 #define MAX_MACRO_NAME_LENGTH 31
-#define MAX_FILENAME_LENGTH 256
+#define MAX_FILENAME_LENGTH 256  /* Ubuntu/Linux NAME_MAX is 255 bytes; +1 for the null terminator */
 
 /* The read buffer needs 2 bytes of headroom beyond MAX_LINE_LENGTH so a
  * line exactly at the limit can be told apart from one over it  */
@@ -148,7 +148,7 @@ typedef enum {
 #define ERR_MACRO_REGISTER_UNEXPECTED "Error: Unexpected internal error registering macro '%s'\n"
 #define ERR_MACRO_NESTED_DEFINITION "Error at line %d: Nested macro definition ('mcro' inside macro '%s', missing 'mcroend')\n"
 #define ERR_MCRO_INVALID_SYNTAX "Error at line %d: Invalid macro definition syntax. Expected: mcro <name>\n"
-#define ERR_MACRO_NAME_INVALID "Error at line %d: Macro name '%s' is invalid (must start with a letter and contain only letters/digits)\n"
+#define ERR_MACRO_NAME_INVALID "Error at line %d: Macro name '%s' is invalid (must start with a letter and contain only letters/digits/underscores)\n"
 #define ERR_MACRO_NAME_RESERVED "Error at line %d: Macro name '%s' is a reserved word\n"
 #define ERR_MACRO_BODY_ALLOC_FAILED "Error: Cannot allocate macro body buffer\n"
 #define ERR_MACRO_LINE_ALLOC_FAILED "Error: Cannot allocate memory while processing line %d\n"

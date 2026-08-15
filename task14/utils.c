@@ -112,7 +112,15 @@ Boolean isReservedWord(const char *word)
     return FALSE;
 }
 
-Boolean isValidSymbolName(const char *name)
+/**
+ * Shared syntax check behind isValidSymbolName/isValidMacroName: letter,
+ * then letters/digits (and '_' if allow_underscore) up to
+ * MAX_MACRO_NAME_LENGTH characters.
+ * @param name the name to validate
+ * @param allow_underscore whether '_' is accepted after the first character
+ * @return TRUE if valid, FALSE otherwise
+ */
+static Boolean isValidNameSyntax(const char *name, Boolean allow_underscore)
 {
     int i;
     int len;
@@ -131,12 +139,22 @@ Boolean isValidSymbolName(const char *name)
     }
 
     for (i = 1; i < len; i++) {
-        if (!isalnum((unsigned char)name[i])) {
+        if (!isalnum((unsigned char)name[i]) && !(allow_underscore && name[i] == '_')) {
             return FALSE;
         }
     }
 
     return TRUE;
+}
+
+Boolean isValidSymbolName(const char *name)
+{
+    return isValidNameSyntax(name, FALSE);
+}
+
+Boolean isValidMacroName(const char *name)
+{
+    return isValidNameSyntax(name, TRUE);
 }
 
 char* duplicateString(const char *str)

@@ -38,13 +38,21 @@ Boolean isLineTooLong(const char *str);
 Boolean isReservedWord(const char *word);
 
 /**
- * Checks a name against label/macro-name syntax: must start with a letter,
- * contain only letters/digits after that, and be at most
- * MAX_MACRO_NAME_LENGTH characters long.
+ * Checks a name against label syntax: must start with a letter, contain
+ * only letters/digits after that, and be at most MAX_MACRO_NAME_LENGTH
+ * characters long.
  * @param name the name to validate
  * @return TRUE if valid, FALSE otherwise
  */
 Boolean isValidSymbolName(const char *name);
+
+/**
+ * Checks a name against macro-name syntax: same as isValidSymbolName but
+ * also allows '_' after the first character.
+ * @param name the name to validate
+ * @return TRUE if valid, FALSE otherwise
+ */
+Boolean isValidMacroName(const char *name);
 
 /**
  * Allocates and returns a copy of str (C90 has no strdup). Caller must free
