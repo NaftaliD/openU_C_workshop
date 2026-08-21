@@ -1,9 +1,7 @@
 /*
  * data_directive_line.h
- * A single parsed data-directive statement (.db/.dw/.dh/.asciz). .entry and
- * .extern are handled elsewhere (entry_list.h, symbol_table.h) -- neither
- * allocates image bytes, so neither fits this shape. Also a growable list of
- * these (backed by growable_array.h's shared growth primitive).
+ * A single parsed data-directive statement (.db/.dw/.dh/.asciz), and a
+ * growable list of them. .entry/.extern live in entry_list.h/symbol_table.h.
  */
 
 #ifndef DATA_DIRECTIVE_LINE_H
@@ -37,9 +35,8 @@ typedef struct {
 int getDirectiveByteWidth(Directive directive);
 
 /**
- * Allocates a DataDirectiveNode. Fields are left uninitialized -- the
- * caller (parseLine's directive sub-parser) fills in every field
- * unconditionally.
+ * Allocates a DataDirectiveNode. Fields are left uninitialized, the caller
+ * fills in every field unconditionally.
  * @return the new node, or NULL on allocation failure
  */
 DataDirectiveNode* createDataDirectiveNode(void);
@@ -59,9 +56,8 @@ DataDirectiveList* createDataDirectiveList(void);
 Boolean appendDataDirective(DataDirectiveList *list, DataDirectiveNode *node);
 
 /**
- * Appends one value to node's own value list, growing it if needed (starts
- * unallocated, as createDataDirectiveNode leaves it -- the first call here
- * allocates it at INITIAL_LIST_CAPACITY).
+ * Appends one value to node's own value list, growing it if needed
+ * (unallocated until the first call, which sets INITIAL_LIST_CAPACITY).
  * @param node the data-directive node being built
  * @param value the value to append
  * @return TRUE on success, FALSE on allocation failure
@@ -75,10 +71,8 @@ Boolean appendDirectiveValue(DataDirectiveNode *node, long value);
 void destroyDataDirectiveList(DataDirectiveList *list);
 
 /**
- * Adds icf to every node's address. Called once, after Pass One finishes,
- * to shift data addresses past the code image -- mirrors
- * relocateDataSymbols in symbol_table.h, which does the same for the
- * symbol table's DATA-type entries.
+ * Adds icf to every node's address, shifting data addresses past the code
+ * image. Mirrors relocateDataSymbols in symbol_table.h.
  * @param list the data-directive list
  * @param icf the final instruction counter value
  */

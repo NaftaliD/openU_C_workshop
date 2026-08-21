@@ -41,8 +41,9 @@ void logMessage(LogLevel level, const char *format, ...)
         vprintf(format, args);
         va_end(args);
     } else if (level == LOG_ERROR) {
+        fprintf(stdout, "ERROR: ");
         va_start(args, format);
-        vfprintf(stderr, format, args);
+        vfprintf(stdout, format, args);
         va_end(args);
     }
 }

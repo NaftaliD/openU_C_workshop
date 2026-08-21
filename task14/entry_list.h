@@ -14,8 +14,7 @@ typedef struct {
     char symbol_name[MAX_LABEL_LENGTH + 1];
 } EntryNode;
 
-/* Growable array of structs -- small and self-contained, no need to
- * individually malloc each one */
+/* Growable array of structs */
 typedef struct {
     EntryNode *items;
     int count;

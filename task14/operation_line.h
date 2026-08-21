@@ -45,8 +45,8 @@ typedef struct {
 } OperationList;
 
 /**
- * Allocates an OperationNode. Fields are left uninitialized -- the caller
- * (parseLine's operation sub-parser) fills in every field unconditionally.
+ * Allocates an OperationNode. Fields are left uninitialized. The caller
+ * fills in every field unconditionally.
  * @return the new node, or NULL on allocation failure
  */
 OperationNode* createOperationNode(void);

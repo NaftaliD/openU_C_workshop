@@ -182,7 +182,7 @@ static Boolean appendToMacroBody(
  * Handles an "mcroend" line: registers the collected macro body into the
  * macro table.
  * @param state the current processing state
- * @return TRUE to continue processing, FALSE to stop (error occurred)
+ * @return TRUE to continue processing, FALSE on an unrecoverable error
  */
 static Boolean handleMcroEnd(MacroProcessorState *state)
 {
@@ -191,12 +191,13 @@ static Boolean handleMcroEnd(MacroProcessorState *state)
     /* Full validation lives here, mirroring handleMcroStart below. */
     if (!isMcroDefinitionEnd(state->line)) {
         logMessage(LOG_ERROR, ERR_MCROEND_TRAILING_CHARS, state->line_num);
-        return FALSE;  /* Break */
+        return FALSE;  /* Unrecoverable */
     }
 
     if (!state->in_macro) {
         logMessage(LOG_ERROR, ERR_MCROEND_WITHOUT_MCRO, state->line_num);
-        return FALSE;  /* Break */
+        state->is_error = 1;
+        return TRUE;  /* Recoverable */
     }
 
     state->in_macro = 0;
@@ -217,7 +218,10 @@ static Boolean handleMcroEnd(MacroProcessorState *state)
             return TRUE;  /* Continue */
         case RC_DUPLICATE:
             logMessage(LOG_ERROR, ERR_MACRO_ALREADY_DEFINED, state->line_num, state->name);
-            break;
+            state->is_error = 1;
+            free(state->macro_body);
+            state->macro_body = NULL;
+            return TRUE;  /* Recoverable */
         case RC_OUT_OF_MEMORY:
             logMessage(LOG_ERROR, ERR_MACRO_REGISTER_ALLOC_FAILED, state->name);
             break;
@@ -228,20 +232,20 @@ static Boolean handleMcroEnd(MacroProcessorState *state)
 
     free(state->macro_body);
     state->macro_body = NULL;
-    return FALSE;  /* Break */
+    return FALSE;  /* Unrecoverable */
 }
 
 /**
  * Handles an "mcro <name>" line: validates the syntax and name, then
  * initializes the macro body buffer.
  * @param state the current processing state
- * @return TRUE to continue processing, FALSE to stop (error occurred)
+ * @return TRUE to continue processing, FALSE on an unrecoverable error
  */
 static Boolean handleMcroStart(MacroProcessorState *state)
 {
     /* Rejected outright if we're already inside an unterminated macro,
-     * instead of silently starting a new one and leaking/discarding the one
-     * in progress -- mirrors handleMcroEnd's own !state->in_macro check. */
+     * instead of silently starting a new one and discarding the one in
+     * progress. Mirrors handleMcroEnd's own !state->in_macro check. */
     if (state->in_macro) {
         logMessage(LOG_ERROR, ERR_MACRO_NESTED_DEFINITION, state->line_num, state->name);
         return FALSE;  /* Break */
@@ -304,7 +308,7 @@ static Boolean handleRegularLine(MacroProcessorState *state)
  * Classifies one line (mcroend / mcro start / macro body / regular) and
  * dispatches to the matching handler.
  * @param state the current processing state
- * @return TRUE to continue processing, FALSE to stop (fatal error)
+ * @return TRUE to continue processing, FALSE on an unrecoverable error
  */
 static Boolean processLine(MacroProcessorState *state)
 {
@@ -345,7 +349,7 @@ static Boolean processLine(MacroProcessorState *state)
 
 /**
  * Closes files and removes the partial output file if any errors occurred.
- * The macro table is only freed here on failure -- on success the caller
+ * The macro table is only freed here on failure. On success the caller
  * takes ownership of it (see expandMacros's macros_out).
  * @param state the current processing state
  * @param output_file path to the .am file, removed if had_errors is set
@@ -370,6 +374,18 @@ static void finalizeResources(
     
     if (had_errors && remove(output_file) == 0) {
         logMessage(LOG_DEBUG, "Cleaned up partial output file: %s\n", output_file);
+    }
+}
+
+/**
+ * @param fp the file to read from
+ */
+static void drainRestOfLine(FILE *fp)
+{
+    int c;
+
+    while ((c = fgetc(fp)) != EOF && c != '\n') {
+        /* discard */
     }
 }
 
@@ -401,7 +417,8 @@ ResultCode expandMacros(const char *input_file, const char *output_file, MacroTa
         if (isLineTooLong(state.line)) {
             logMessage(LOG_ERROR, ERR_LINE_TOO_LONG, state.line_num, MAX_LINE_LENGTH);
             state.is_error = 1;
-            break;
+            drainRestOfLine(state.in_fp);
+            continue;  /* Recoverable */
         }
 
         /* Preprocess: remove newline, trim, remove comments */

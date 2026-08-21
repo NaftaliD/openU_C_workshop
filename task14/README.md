@@ -1,39 +1,43 @@
 # Notes
 
-A few conventions used in this code that the spec doesn't spell out, in case
-they look like judgment calls while reading.
+A few judgment calls used in this code for cases the spec doesn't fully spell out.
 
-## Macro names
+## Macro & label names
 
-The spec never gives syntax rules for macro names, only that they can't be a
-reserved word. We apply the rule must start with a letter, then letters/digits/underscores, max 31 characters.
+
+For macro we apply the rule must start with a letter, then letters/digits/underscores, max 31 characters.
+For label we apply the same rule with '_' forbidden.
 
 ## Macro name vs. symbol collisions
 
 A symbol can't share a name with a macro. This is enforced for every kind
-of symbol definition -- labels and `.extern` alike -- not just labels.
+of symbol definition (labels and `.extern` alike).
 
 ## A label with nothing after it is an error
 
 `FOO:` alone on a line is rejected (`ERR_LABEL_WITHOUT_STATEMENT`), not
-treated as blank -- there's no instruction/directive to tell Pass One
-whether it should be CODE- or DATA-typed.
+treated as blank.
 
-## Pre-assembler stops at the first error, Pass One doesn't
+## Pre-assembler: recoverable vs. unrecoverable errors
 
-Pass One collects every error in the file before deciding whether to abort
-(each line parses independently, so one bad line can't corrupt how later
-lines are read). The pre-assembler (`expandMacros`) deliberately does
-*not* do this -- it stops scanning at the first error. Macro-tracking state
-(inside a definition or not, whose body is being collected) is cumulative
-across lines, so one real problem (e.g. a missing `mcroend`) would make
-every subsequent line get misinterpreted if we kept going, producing a
-cascade of confusing secondary errors instead of the one real one.
+Unlike Pass One, the pre-assembler only keeps scanning past errors that
+don't corrupt macro-tracking state (`in_macro`, the body being collected).
+
+- Recoverable: line too long, stray `mcroend`, duplicate macro name.
+- Unrecoverable: nested/malformed `mcro`/`mcroend`, allocation failures.
+
+Invalid/reserved macro names are also treated as unrecoverable, though a
+cheap recovery (collect the body anyway, skip registering it) exists if
+ever needed.
+
+## Error line numbers
+
+Error messages cite `.am` line numbers, not `.as` ones (the forum allows either).
 
 ## Line length
 
 The 80-character max line length is validated in the pre-assembler
-(`macro_processor.c`), on each raw line as it's read from the `.as` file --
+(`macro_processor.c`), on each raw line as it's read from the `.as` file,
 not deferred to Pass One. By the time Pass One reads the `.am` file, every
 line is already guaranteed to be within the limit.
 

@@ -134,7 +134,7 @@ char* dataDirectiveNodeToString(const DataDirectiveNode *node)
                     "[DataDirectiveNode line=%d directive=%s values=(",
                     node->line_number, directiveToString(node->directive));
 
-    /* Bounded like dataDirectiveListToString's own loop -- value_count is
+    /* Bounded like dataDirectiveListToString's own loop, value_count is
      * unbounded, and without this, pos could run past buffer's end. */
     for (i = 0; i < node->value_count && pos < BUFF_SIZE - VALUE_LIST_MARGIN; i++) {
         pos += snprintf(buffer + pos, sizeof(buffer) - pos, "%s%ld",

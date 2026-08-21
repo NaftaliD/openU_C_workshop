@@ -15,7 +15,7 @@
 #include "assembler_context.h"
 
 /* Result of extracting an optional leading "name:" label. Transient: the
- * driver inserts it into the symbol table and discards it -- never stored
+ * driver inserts it into the symbol table and discards it, never stored
  * on OperationNode/DataDirectiveNode. */
 typedef struct {
     int  has_label;
@@ -31,7 +31,7 @@ typedef enum {
 } LineType;
 
 /* Exactly one arm is meaningful, selected by the returned LineType. ENTRY
- * and EXTERN share the plain string arm -- neither allocates. */
+ * and EXTERN share the plain string arm, neither allocates. */
 typedef union {
     OperationNode     *operation;
     DataDirectiveNode *directive;
@@ -47,7 +47,7 @@ typedef union {
  * @param line_number for error reporting
  * @param errors error accumulator for invalid label syntax
  * @return TRUE if a label was found and consumed, FALSE otherwise (no label
- *         prefix, or an invalid one -- *rest_out still lets parsing continue
+ *         prefix, or an invalid one, *rest_out still lets parsing continue
  *         either way, and an error was appended for the invalid case)
  */
 Boolean extractLabel(const char *line, LabelInfo *label_out, const char **rest_out,
@@ -55,8 +55,8 @@ Boolean extractLabel(const char *line, LabelInfo *label_out, const char **rest_o
 
 /**
  * Single entry point: classifies one line and parses it into out, selecting
- * the matching ParsedLinePayload arm. Pure with respect to file-wide state --
- * does not touch IC/DC or the symbol table; that's the driver's job.
+ * the matching ParsedLinePayload arm. Doesn't touch IC/DC or the symbol
+ * table, that's the driver's job.
  * @param raw_line one already-preprocessed .am line
  * @param line_number for error reporting
  * @param out receives the parsed operation/directive/symbol-name

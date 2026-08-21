@@ -1,8 +1,8 @@
 /*
  * assembler_context.h
- * Cross-step state for assembling one .as file -- created once, threaded
- * through macro expansion / Pass One / (later) Pass Two, destroyed once
- * after the whole pipeline for that file finishes.
+ * Cross-step state for assembling one .as file: created once, threaded
+ * through macro expansion / Pass One / Pass Two, destroyed once the
+ * pipeline for that file finishes.
  */
 
 #ifndef ASSEMBLER_CONTEXT_H

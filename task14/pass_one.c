@@ -393,7 +393,7 @@ static Boolean expectEndOfOperands(const char *p, int line_number, ErrorList *er
 /**
  * Parses `count` comma-separated register operands: "$rs, $rt[, $rd]".
  * Shared by the 3-register shape (add/sub/and/or/nor) and the 2-register
- * shape (move/mvhi/mvlo) -- identical grammar, only the count differs.
+ * shape (move/mvhi/mvlo), identical grammar, only the count differs.
  * @param count how many register operands this operation takes (2 or 3)
  * @param rest the line, after the opcode name
  * @param out the node to fill in (operands/operand_count/has_error)
@@ -427,7 +427,7 @@ static void parseRegisterOperands(int count, const char *rest, OperationNode *ou
 }
 
 /**
- * Parses "$rs, immed, $rt" -- shared by I-type arithmetic
+ * Parses "$rs, immed, $rt": shared by I-type arithmetic
  * (addi/subi/andi/ori/nori) and I-type memory (lb/sb/lw/sw/lh/sh), which
  * have identical operand grammar even though their semantics differ.
  * @param rest the line, after the opcode name
@@ -556,7 +556,7 @@ static void parseLabelOnlyOperand(const char *rest, OperationNode *out,
 
 /**
  * Parses jmp's one operand, which is either a label ("jmp label") or a
- * register ("jmp $N") -- disambiguated by whether it starts with '$'.
+ * register ("jmp $N"), disambiguated by whether it starts with '$'.
  * @param rest the line, after the opcode name
  * @param out the node to fill in
  * @param line_number for error reporting
@@ -590,9 +590,8 @@ static void parseJmpOperand(const char *rest, OperationNode *out, int line_numbe
 
 /**
  * Parses the operand portion of an operation line into out, dispatched by
- * operand *shape* (not just R/I/J class -- e.g. R-type splits into
- * 3-register and 2-register shapes; I-type into reg-immed-reg and
- * reg-reg-label shapes; J-type into label-only, jmp's dual form, and none).
+ * operand *shape*, not just R/I/J class (e.g. R-type splits into 3-register
+ * and 2-register shapes, J-type into label-only, jmp's dual form, and none).
  * @param op which operation this line uses (already looked up, never invalid)
  * @param rest the line, after the label and opcode name
  * @param out the node to fill in
@@ -701,9 +700,8 @@ LineType parseLine(const char *raw_line, int line_number,
         return LINE_TYPE_BLANK;
     }
 
-    /* rest is known non-empty and free of leading whitespace at this point,
-     * so getFirstToken (same delimiter set) is guaranteed to return a
-     * non-empty token -- no need to check for one. */
+    /* rest is non-empty and free of leading whitespace here, so
+     * getFirstToken is guaranteed to return a non-empty token. */
     first_word = getFirstToken(rest, " \t", &rest);
     if (first_word == NULL) {
         appendError(errors, line_number, ERR_OUT_OF_MEMORY);
@@ -712,12 +710,11 @@ LineType parseLine(const char *raw_line, int line_number,
 
     rest = skipWhitespace(rest);
 
-    /* A leading '.' is what makes a line a directive -- not whether the
-     * name that follows is recognized. That has to be checked before
-     * lookup, not derived from it, so a garbled ".foo" is reported as an
-     * unknown DIRECTIVE, not an unknown operation. */
+    /* A leading '.' marks a directive line, checked before the name lookup
+     * so a garbled ".foo" reports as an unknown directive, not an unknown
+     * operation */
     if (first_word[0] == '.') {
-        directive = directiveFromString(first_word);
+        directive = directiveFromString(first_word + 1);
         free(first_word);
 
         switch (directive) {
@@ -745,7 +742,7 @@ LineType parseLine(const char *raw_line, int line_number,
     }
 
     /* Not '.'-prefixed, so this is an operation attempt regardless of
-     * whether the name turns out to be recognized -- same reasoning as the
+     * whether the name turns out to be recognized, same reasoning as the
      * directive branch above. */
     operation = operationFromString(first_word);
     free(first_word);
@@ -766,7 +763,7 @@ LineType parseLine(const char *raw_line, int line_number,
 
 /**
  * Checks name against the macro table, appending an error if it collides.
- * Shared by insertLabelSymbol and handleExternLine -- the rest of their
+ * Shared by insertLabelSymbol and handleExternLine. The rest of their
  * insertion logic differs (see each one's own comment).
  * @param context the assembler context (macros, errors)
  * @param name the candidate symbol name
@@ -784,10 +781,8 @@ static Boolean rejectMacroNameCollision(AssemblerContext *context, const char *n
 
 /**
  * Registers the label extracted from an operation/data-directive line as a
- * symbol, if the line actually had one -- a no-op otherwise. A failure
- * (beyond a macro-name collision) can only mean the name was already
- * defined as a label (extractLabel already rejected bad syntax and
- * reserved words) -- unlike .extern, a label may never repeat.
+ * symbol, a no-op if the line had none. Unlike .extern, a label may never
+ * repeat, so any failure here (beyond a macro-name collision) is a duplicate.
  * @param context the assembler context (macros, symbols, errors)
  * @param label the label extracted from this line
  * @param value the address to store (current IC or DC)
@@ -815,9 +810,8 @@ static void insertLabelSymbol(AssemblerContext *context, const LabelInfo *label,
 
 /**
  * Handles one .extern line: inserts the symbol as external unless it's
- * already known. A repeat .extern of the same name is allowed (no-op),
- * unlike a label; a name already defined with a different attribute is an
- * error.
+ * already known. Unlike a label, a repeat .extern is a no-op, not an
+ * error. A name already defined with a different attribute still is.
  * @param context the assembler context (macros, symbols, errors)
  * @param symbol_name the externed name
  * @param line_number for error reporting
@@ -859,7 +853,7 @@ Boolean runPassOne(const char *am_file, AssemblerContext *context)
     }
 
     /* .am lines already had comments/blank lines removed and were trimmed
-     * by the pre-assembler -- only fgets's trailing newline needs stripping. */
+     * by the pre-assembler. Only fgets's trailing newline needs stripping. */
     while (fgets(line, LINE_BUFFER_SIZE, fp) != NULL) {
         line_number++;
         if (strlen(line) > 0 && line[strlen(line) - 1] == '\n') {
@@ -900,10 +894,9 @@ Boolean runPassOne(const char *am_file, AssemblerContext *context)
                 break;
 
             case LINE_TYPE_ENTRY:
-                /* Label on this line is ignored; the symbol itself may be a
-                 * forward reference, so marking it waits for Pass Two. An
-                 * empty name means parseSymbolOperand already failed and
-                 * appended its own error -- nothing valid to record here. */
+                /* Label on this line is ignored. The symbol may be a forward
+                 * reference, so marking it waits for Pass Two. Empty name
+                 * means parseSymbolOperand already reported its own error. */
                 if (payload.symbol_name[0] != '\0' &&
                     appendEntry(context->entries, line_number, payload.symbol_name) == FALSE) {
                     appendError(context->errors, line_number, ERR_OUT_OF_MEMORY);
@@ -924,6 +917,11 @@ Boolean runPassOne(const char *am_file, AssemblerContext *context)
 
     context->icf = ic;
     context->dcf = dc;
+
+    if (context->icf + context->dcf > MAX_MEMORY_SIZE) {
+        appendError(context->errors, line_number, ERR_MEMORY_OVERFLOW);
+    }
+
     relocateDataSymbols(context->symbols, ic);
     relocateDataDirectiveAddresses(context->directives, ic);
 

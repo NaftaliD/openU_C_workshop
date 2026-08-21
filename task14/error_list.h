@@ -19,10 +19,9 @@ typedef struct {
     ErrorNode *items;
     int count;
     int capacity;
-    int had_fatal_error; /* set if appendError itself ever failed to grow
-                            (allocation failure) while trying to record an
-                            error -- so an OOM while logging an error is
-                            never silently indistinguishable from "no errors" */
+    int had_fatal_error; /* set if appendError itself failed to grow while
+                            recording an error, so OOM-during-logging isn't
+                            mistaken for "no errors" */
 } ErrorList;
 
 /**

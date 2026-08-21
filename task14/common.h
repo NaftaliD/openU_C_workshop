@@ -30,6 +30,7 @@
 #define INITIAL_LIST_CAPACITY 16  /* growable-array lists start here, double on growth */
 #define INITIAL_IC 100            /* first instruction is loaded at address 100 */
 #define INITIAL_DC 0
+#define MAX_MEMORY_SIZE 33554432 /* 2^25 addressable bytes, i.e. valid addresses 0..2^25-1 */
 
 #define MIN_REGISTER_NUMBER 0
 #define MAX_REGISTER_NUMBER 31
@@ -42,7 +43,7 @@
 #define ENT_FILE_EXTENSION ".ent"
 #define EXT_FILE_EXTENSION ".ext"
 
-/* Debug-dump (*ToString) sizing -- shared by every module's debug-string
+/* Debug-dump (*ToString) sizing, shared by every module's debug-string
  * builder (symbol_table.c, entry_list.c, operation_line.c,
  * data_directive_line.c, macro_table.c, error_list.c). */
 #define BUFF_SIZE 1024              /* stack buffer for a single node/entry dump */
@@ -99,11 +100,12 @@ typedef enum {
 #define ERR_DUPLICATE_LABEL "Duplicate label"
 #define ERR_SYMBOL_ATTRIBUTE_CONFLICT "Symbol already defined with a different attribute"
 #define ERR_LABEL_WITHOUT_STATEMENT "Label must be followed by an instruction or directive"
+#define ERR_MEMORY_OVERFLOW "Program exceeds maximum memory size (" STRINGIFY(MAX_MEMORY_SIZE) " bytes)"
 
 /* Error messages: data directives (.db/.dw/.dh/.asciz) */
 #define ERR_VALUE_LIST_MISSING "Missing value list"
 #define ERR_EXPECTED_NUMBER "Expected a number"
-#define ERR_VALUE_OUT_OF_RANGE "Value out of range for %s"
+#define ERR_VALUE_OUT_OF_RANGE "Value out of range for .%s"
 #define ERR_EXPECTED_COMMA_VALUES "Expected ',' between values"
 #define ERR_EXPECTED_VALUE_AFTER_COMMA "Expected a value after ','"
 #define ERR_ASCIZ_MISSING_OPEN_QUOTE "Expected '\"' to start .asciz string"
@@ -135,37 +137,37 @@ typedef enum {
 /* Error messages: general */
 #define ERR_OUT_OF_MEMORY "Out of memory"
 
-/* Error messages: macro pre-assembler (macro_processor.c) -- full logMessage
+/* Error messages: macro pre-assembler (macro_processor.c). Full logMessage
  * format strings, not plain ErrorList messages like the ones above. */
-#define ERR_MACRO_CANNOT_OPEN_INPUT "Error: Cannot open input file %s\n"
-#define ERR_MACRO_CANNOT_OPEN_OUTPUT "Error: Cannot open output file %s\n"
-#define ERR_MACRO_TABLE_ALLOC_FAILED "Error: Cannot allocate macro table\n"
-#define ERR_MACRO_BODY_RESIZE_FAILED "Error: Cannot resize macro body buffer\n"
-#define ERR_MCROEND_TRAILING_CHARS "Error at line %d: Extra characters after 'mcroend'\n"
-#define ERR_MCROEND_WITHOUT_MCRO "Error at line %d: 'mcroend' without matching 'mcro'\n"
-#define ERR_MACRO_ALREADY_DEFINED "Error at line %d: Macro '%s' already defined\n"
-#define ERR_MACRO_REGISTER_ALLOC_FAILED "Error: Cannot allocate memory for macro '%s'\n"
-#define ERR_MACRO_REGISTER_UNEXPECTED "Error: Unexpected internal error registering macro '%s'\n"
-#define ERR_MACRO_NESTED_DEFINITION "Error at line %d: Nested macro definition ('mcro' inside macro '%s', missing 'mcroend')\n"
-#define ERR_MCRO_INVALID_SYNTAX "Error at line %d: Invalid macro definition syntax. Expected: mcro <name>\n"
-#define ERR_MACRO_NAME_INVALID "Error at line %d: Macro name '%s' is invalid (must start with a letter and contain only letters/digits/underscores)\n"
-#define ERR_MACRO_NAME_RESERVED "Error at line %d: Macro name '%s' is a reserved word\n"
-#define ERR_MACRO_BODY_ALLOC_FAILED "Error: Cannot allocate macro body buffer\n"
-#define ERR_MACRO_LINE_ALLOC_FAILED "Error: Cannot allocate memory while processing line %d\n"
-#define ERR_LINE_TOO_LONG "Error at line %d: Line exceeds maximum length of %d characters\n"
-#define ERR_MACRO_UNCLOSED "Error: Unclosed macro '%s' - missing 'mcroend' at end of file\n"
+#define ERR_MACRO_CANNOT_OPEN_INPUT "Cannot open input file %s\n"
+#define ERR_MACRO_CANNOT_OPEN_OUTPUT "Cannot open output file %s\n"
+#define ERR_MACRO_TABLE_ALLOC_FAILED "Cannot allocate macro table\n"
+#define ERR_MACRO_BODY_RESIZE_FAILED "Cannot resize macro body buffer\n"
+#define ERR_MCROEND_TRAILING_CHARS "At line %d: Extra characters after 'mcroend'\n"
+#define ERR_MCROEND_WITHOUT_MCRO "At line %d: 'mcroend' without matching 'mcro'\n"
+#define ERR_MACRO_ALREADY_DEFINED "At line %d: Macro '%s' already defined\n"
+#define ERR_MACRO_REGISTER_ALLOC_FAILED "Cannot allocate memory for macro '%s'\n"
+#define ERR_MACRO_REGISTER_UNEXPECTED "Unexpected internal error registering macro '%s'\n"
+#define ERR_MACRO_NESTED_DEFINITION "At line %d: Nested macro definition ('mcro' inside macro '%s', missing 'mcroend')\n"
+#define ERR_MCRO_INVALID_SYNTAX "At line %d: Invalid macro definition syntax. Expected: mcro <name>\n"
+#define ERR_MACRO_NAME_INVALID "At line %d: Macro name '%s' is invalid (must start with a letter and contain only letters/digits/underscores)\n"
+#define ERR_MACRO_NAME_RESERVED "At line %d: Macro name '%s' is a reserved word\n"
+#define ERR_MACRO_BODY_ALLOC_FAILED "Cannot allocate macro body buffer\n"
+#define ERR_MACRO_LINE_ALLOC_FAILED "Cannot allocate memory while processing line %d\n"
+#define ERR_LINE_TOO_LONG "At line %d: Line exceeds maximum length of %d characters\n"
+#define ERR_MACRO_UNCLOSED "Unclosed macro '%s' - missing 'mcroend' at end of file\n"
 
-/* Error messages: pipeline orchestration (assembler_core.c) -- same
+/* Error messages: pipeline orchestration (assembler_core.c), same
  * full-string convention as above. */
-#define ERR_MACRO_PROCESSOR_FAILED "Error: Macro processor failed for %s\n"
-#define ERR_MACRO_PROCESSOR_IO_FAILED "Error: Could not process %s (file I/O error)\n"
-#define ERR_PASS_ONE_OPEN_FAILED "Error: Could not open %s for Pass One\n"
-#define ERR_PASS_ONE_FAILED "Error: Pass One failed for %s (%d error(s))\n"
-#define ERR_PASS_TWO_OPEN_FAILED "Error: Could not open %s for Pass Two\n"
-#define ERR_PASS_TWO_FAILED "Error: Pass Two failed for %s (%d error(s))\n"
-#define ERR_MISSING_AS_EXTENSION "Error: %s does not have a .as extension\n"
-#define ERR_FILE_OUT_OF_MEMORY "Error: Out of memory processing %s\n"
-#define ERR_FILENAME_TOO_LONG "Error: Filename too long: %s\n"
+#define ERR_MACRO_PROCESSOR_FAILED "Macro processor failed for %s\n"
+#define ERR_MACRO_PROCESSOR_IO_FAILED "Could not process %s (file I/O error)\n"
+#define ERR_PASS_ONE_OPEN_FAILED "Could not open %s for Pass One\n"
+#define ERR_PASS_ONE_FAILED "Pass One failed for %s (%d error(s))\n"
+#define ERR_PASS_TWO_OPEN_FAILED "Could not open %s for Pass Two\n"
+#define ERR_PASS_TWO_FAILED "Pass Two failed for %s (%d error(s))\n"
+#define ERR_MISSING_AS_EXTENSION "%s does not have a .as extension\n"
+#define ERR_FILE_OUT_OF_MEMORY "Out of memory processing %s\n"
+#define ERR_FILENAME_TOO_LONG "Filename too long: %s\n"
 #define USAGE_MESSAGE "Usage: %s <file1.as> [file2.as] ...\n"
 
 /* Diagnostic messages: logger.c */
@@ -235,7 +237,7 @@ const char* operationToString(Operation op);
 
 /**
  * Converts a directive name to its Directive enum value.
- * @param str the string to convert, including the leading dot (e.g., ".entry")
+ * @param str the string to convert, without the leading dot (e.g., "entry")
  * @return the Directive value, or DIRECTIVE_INVALID if not recognized
  */
 Directive directiveFromString(const char *str);
@@ -243,7 +245,7 @@ Directive directiveFromString(const char *str);
 /**
  * Converts a Directive enum value to its directive name.
  * @param directive the directive enum value
- * @return the directive name with its leading dot, or NULL if invalid
+ * @return the directive name without its leading dot, or NULL if invalid
  */
 const char* directiveToString(Directive directive);
 

@@ -17,7 +17,7 @@
 char* trimWhitespace(char *str);
 
 /**
- * Truncates a line at the first ';' comment marker, in place.
+ * Blanks str in place if it's a comment line (first non-blank char is ';').
  * @param str the line to strip
  */
 void removeComments(char *str);
@@ -65,8 +65,7 @@ char* duplicateString(const char *str);
 /**
  * Extracts the first token from str, ending at any character in delimiters
  * or at the end of the string. Does not modify str. An empty leading token
- * (str starts with a delimiter, or is empty) yields an empty string, not
- * NULL -- NULL means allocation failure, not "no token".
+ * yields an empty string, not NULL. NULL means allocation failure.
  * @param str the string to scan
  * @param delimiters characters that end the token
  * @param rest_out if non-NULL, receives a pointer into str at the delimiter

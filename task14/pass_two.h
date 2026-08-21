@@ -12,8 +12,7 @@
 /**
  * Runs Pass Two, writing lines to each file as they're ready.
  * ent_filename/ext_filename are only created if something is actually
- * written to them. Any error removes every file this call created --
- * caller just checks errorListHasErrors afterward.
+ * written to them. Any error removes every file this call created.
  * @param ob_filename path to write the object file to
  * @param ent_filename path to write entry symbols to, if any exist
  * @param ext_filename path to write external symbol usages to, if any exist

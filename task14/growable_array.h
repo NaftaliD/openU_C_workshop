@@ -1,9 +1,7 @@
 /*
  * growable_array.h
- * Shared growth-doubling primitive, used by every growable list in this
- * project plus macro_processor.c's macro-body buffer -- one place that owns
- * "double the capacity, realloc, only commit on success" instead of each
- * caller reimplementing it.
+ * Shared growth-doubling primitive used by every growable list in this
+ * project (and macro_processor.c's macro-body buffer).
  */
 
 #ifndef GROWABLE_ARRAY_H
@@ -14,9 +12,8 @@
 
 /**
  * Doubles the capacity of a growable array. Reallocates *items to
- * (*capacity * 2) * element_size bytes. On failure, *items and *capacity
- * are left completely untouched (the old, smaller allocation is still
- * valid) -- capacity is only updated after realloc is confirmed to succeed.
+ * (*capacity * 2) * element_size bytes. On failure, both are left
+ * untouched.
  * @param items pointer to the buffer pointer to grow
  * @param capacity pointer to its current capacity (in elements)
  * @param element_size size of one element in bytes

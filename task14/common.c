@@ -22,7 +22,7 @@ static const int OPERATION_COUNT = sizeof(OPERATION_STRINGS) / sizeof(OPERATION_
 
 /* Directive strings */
 static const char *DIRECTIVE_STRINGS[] = {
-    ".entry", ".extern", ".db", ".dw", ".dh", ".asciz"
+    "entry", "extern", "db", "dw", "dh", "asciz"
 };
 
 static const int DIRECTIVE_COUNT = sizeof(DIRECTIVE_STRINGS) / sizeof(DIRECTIVE_STRINGS[0]);

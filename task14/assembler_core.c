@@ -73,6 +73,25 @@ static void dumpPassOneResults(const AssemblerContext *context)
 }
 
 /**
+ * Prints every recorded error, one per line, prefixed with the source
+ * filename so multi-file runs stay unambiguous.
+ * @param as_filename the file the errors belong to
+ * @param errors the error list to print
+ */
+static void printErrors(const char *as_filename, const ErrorList *errors)
+{
+    int i;
+
+    for (i = 0; i < errors->count; i++) {
+        logMessage(LOG_ERROR, "%s:%d: %s\n", as_filename,
+                   errors->items[i].line_number, errors->items[i].message);
+    }
+    if (errors->had_fatal_error) {
+        logMessage(LOG_ERROR, "%s: %s\n", as_filename, ERR_OUT_OF_MEMORY);
+    }
+}
+
+/**
  * Runs macro expansion, storing the resulting macro table in context on
  * success (Pass One needs it: a label can't share a name with a macro).
  * @param as_filename source .as path
@@ -131,6 +150,7 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
     }
 
     if (errorListHasErrors(context->errors)) {
+        printErrors(as_filename, context->errors);
         logMessage(LOG_ERROR, ERR_PASS_ONE_FAILED, as_filename, context->errors->count);
         return FALSE;
     }
@@ -159,6 +179,7 @@ static Boolean runPassTwoStep(const char *as_filename, const char *ob_filename,
     }
 
     if (errorListHasErrors(context->errors)) {
+        printErrors(as_filename, context->errors);
         logMessage(LOG_ERROR, ERR_PASS_TWO_FAILED, as_filename, context->errors->count);
         return FALSE;
     }
@@ -180,8 +201,8 @@ static Boolean hasAsExtension(const char *filename)
 
 /**
  * Runs the full pipeline for one .as file. Owns the AssemblerContext for
- * the whole pipeline (not just one step), since later steps consume what
- * earlier ones build -- e.g. Pass Two will need everything Pass One built.
+ * the whole pipeline, not just one step, since later steps consume what
+ * earlier ones build (e.g. Pass Two needs everything Pass One built).
  * @param as_filename the .as file to process
  * @return TRUE if every step succeeded, FALSE otherwise
  */

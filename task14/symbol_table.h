@@ -1,10 +1,8 @@
 /*
  * symbol_table.h
  * Every label/extern symbol encountered while assembling a file, with its
- * resolved address and classification. A symbol's origin is always exactly
- * one of CODE/DATA/EXTERNAL (SymbolType) -- .entry never creates a symbol,
- * it only marks an existing one for the .ent file, so it's a separate flag
- * rather than a fourth SymbolType value.
+ * resolved address and classification. .entry only marks an existing
+ * symbol (is_entry flag), it never creates one.
  */
 
 #ifndef SYMBOL_TABLE_H
@@ -25,12 +23,9 @@ typedef struct {
     int  is_entry; /* set later by markEntry; never valid together with EXTERNAL */
 } SymbolNode;
 
-/* Growable array of structs (via growable_array.h), matching EntryList's/
- * ErrorList's pattern. lookupSymbol returns a pointer into this array; that
- * stays valid because every insertSymbol call happens during Pass One's
- * single forward read, strictly before anything (markEntry, Pass Two) reads
- * or holds a pointer -- no insert ever happens after a lookup result is
- * retained. */
+/* Growable array of structs. lookupSymbol's returned pointer stays valid
+ * because every insert happens during Pass One's single forward read,
+ * before anything else holds a pointer into this array. */
 typedef struct {
     SymbolNode *items;
     int count;

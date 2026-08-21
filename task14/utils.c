@@ -51,18 +51,15 @@ char* trimWhitespace(char *str)
 
 void removeComments(char *str)
 {
-    int i;
-    
+    const char *p;
+
     if (str == NULL) {
         return;
     }
-    
-    /* Find first semicolon and truncate at that position */
-    for (i = 0; str[i] != '\0'; i++) {
-        if (str[i] == ';') {
-            str[i] = '\0';
-            break;
-        }
+
+    p = skipWhitespace(str);
+    if (*p == ';') {
+        str[0] = '\0';
     }
 }
 
@@ -76,11 +73,9 @@ Boolean isLineTooLong(const char *str)
 
     len = strlen(str);
 
-    /* A captured trailing newline doesn't count toward the limit -- and its
-     * presence also proves the whole line already fit within the caller's
-     * read buffer, so it's within range by construction. Only the length
-     * matters when no newline was captured: either a truncated too-long
-     * line, or a final line at EOF with no trailing newline at all. */
+    /* A captured trailing newline means the line already fit the read
+     * buffer, so it's in range by construction. Only the length matters
+     * when no newline was captured (truncated, or a final line at EOF). */
     if (len > 0 && str[len - 1] == '\n') {
         return FALSE;
     }
@@ -104,7 +99,7 @@ Boolean isReservedWord(const char *word)
         return TRUE;
     }
 
-    /* Check if it's a valid directive (with leading dot) */
+    /* Check if it's a valid directive */
     if (directiveFromString(word) != DIRECTIVE_INVALID) {
         return TRUE;
     }

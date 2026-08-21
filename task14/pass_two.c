@@ -321,11 +321,9 @@ static Boolean encodeOperation(const OperationNode *node, SymbolTable *symbols,
 }
 
 /**
- * Packs every value's bytes (little-endian, per getDirectiveByteWidth)
- * continuously into 4-byte .ob lines -- no gaps at directive boundaries,
- * unlike operations. Nodes are already address-contiguous (Pass One
- * advances DC by exactly each node's byte count), so only the first
- * node's address is read; the rest is a running count.
+ * Packs every value's bytes (little-endian) continuously into 4-byte .ob
+ * lines, with no gaps at directive boundaries (unlike operations). Only
+ * the first node's address is read; the rest is a running count.
  * @param fp the .ob file, already open
  * @param directives the data-directive list to pack
  */
