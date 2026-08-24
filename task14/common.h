@@ -10,8 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+int snprintf( char * buffer, size_t bufsz,  const char * format, ... );
+
 /* Set to 1 to enable debug logging and verbose output */
-#define IS_DEBUG 1
+#define IS_DEBUG 0
 #define LOG_FILE_PATH "tests/assembler.log"
 
 
@@ -166,6 +169,7 @@ typedef enum {
 #define ERR_PASS_TWO_OPEN_FAILED "Could not open %s for Pass Two\n"
 #define ERR_PASS_TWO_FAILED "Pass Two failed for %s (%d error(s))\n"
 #define ERR_MISSING_AS_EXTENSION "%s does not have a .as extension\n"
+#define ERR_INPUT_FILE_NOT_FOUND "Input file not found or unreadable: %s\n"
 #define ERR_FILE_OUT_OF_MEMORY "Out of memory processing %s\n"
 #define ERR_FILENAME_TOO_LONG "Filename too long: %s\n"
 #define USAGE_MESSAGE "Usage: %s <file1.as> [file2.as] ...\n"

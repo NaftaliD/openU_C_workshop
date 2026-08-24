@@ -5,6 +5,7 @@
 
 #include <stdlib.h>
 #include "growable_array.h"
+#include <stdio.h>
 
 Boolean growArray(void **items, int *capacity, size_t element_size)
 {

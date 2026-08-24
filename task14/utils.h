@@ -55,6 +55,13 @@ Boolean isValidSymbolName(const char *name);
 Boolean isValidMacroName(const char *name);
 
 /**
+ * Checks that a file can be opened for reading, without leaving it open.
+ * @param filename the path to check
+ * @return TRUE if the file could be opened for reading, FALSE otherwise
+ */
+Boolean canOpenForReading(const char *filename);
+
+/**
  * Allocates and returns a copy of str (C90 has no strdup). Caller must free
  * the returned string.
  * @param str the string to copy

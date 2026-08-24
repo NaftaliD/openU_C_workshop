@@ -1,3 +1,7 @@
+# Task 14 Assembler
+
+A two-pass assembler for a custom 32-bit RISC ISA, written for task14 (Open University course 20465, Systems Programming Laboratory) by Naftali Deutsch.
+
 # Notes
 
 A few judgment calls used in this code for cases the spec doesn't fully spell out.
@@ -50,8 +54,8 @@ runs.
 
 ## Debug log
 
-`common.h` has `IS_DEBUG` (currently 1), which writes a step-by-step trace to
-`tests/assembler.log`. Set it to 0 to turn that off.
+`common.h` has `IS_DEBUG` (currently 0), which writes a step-by-step trace to
+`tests/assembler.log`. Set it to 1 to turn that on.
 
 ## Status
 

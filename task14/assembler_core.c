@@ -16,6 +16,9 @@
 #include "logger.h"
 #include "assembler_core.h"
 
+/* Visually separates each input file's output block in the console/log. */
+#define FILE_SEPARATOR_LINE "============================================================\n"
+
 /**
  * Derives an output path for as_filename: same base name, given extension
  * (if as_filename has no extension, extension is simply appended).
@@ -73,22 +76,33 @@ static void dumpPassOneResults(const AssemblerContext *context)
 }
 
 /**
- * Prints every recorded error, one per line, prefixed with the source
- * filename so multi-file runs stay unambiguous.
- * @param as_filename the file the errors belong to
+ * Prints every recorded error, one per line, prefixed with the filename so
+ * multi-file runs stay unambiguous.
+ * @param source_filename the file the errors belong to
  * @param errors the error list to print
  */
-static void printErrors(const char *as_filename, const ErrorList *errors)
+static void printErrors(const char *source_filename, const ErrorList *errors)
 {
     int i;
 
     for (i = 0; i < errors->count; i++) {
-        logMessage(LOG_ERROR, "%s:%d: %s\n", as_filename,
+        logMessage(LOG_ERROR, "%s:%d: %s\n", source_filename,
                    errors->items[i].line_number, errors->items[i].message);
     }
     if (errors->had_fatal_error) {
-        logMessage(LOG_ERROR, "%s: %s\n", as_filename, ERR_OUT_OF_MEMORY);
+        logMessage(LOG_ERROR, "%s: %s\n", source_filename, ERR_OUT_OF_MEMORY);
     }
+}
+
+/**
+ * Prints the banner that opens each input file's output block.
+ * @param as_filename the file about to be processed
+ */
+static void printFileHeader(const char *as_filename)
+{
+    logMessage(LOG_INFO, "\n" FILE_SEPARATOR_LINE);
+    logMessage(LOG_INFO, "Processing %s\n", as_filename);
+    logMessage(LOG_INFO, FILE_SEPARATOR_LINE);
 }
 
 /**
@@ -127,13 +141,11 @@ static Boolean runMacroExpansionStep(const char *as_filename, const char *am_fil
 
 /**
  * Runs Pass One and logs the outcome.
- * @param as_filename source .as path, for error messages
  * @param am_filename expanded .am path to read
  * @param context the assembler context to populate
  * @return TRUE if Pass One completed with no errors, FALSE otherwise
  */
-static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
-                               AssemblerContext *context)
+static Boolean runPassOneStep(const char *am_filename, AssemblerContext *context)
 {
     logMessage(LOG_INFO, "  [2] Running Pass One...\n");
 
@@ -150,8 +162,8 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
     }
 
     if (errorListHasErrors(context->errors)) {
-        printErrors(as_filename, context->errors);
-        logMessage(LOG_ERROR, ERR_PASS_ONE_FAILED, as_filename, context->errors->count);
+        printErrors(am_filename, context->errors);
+        logMessage(LOG_ERROR, ERR_PASS_ONE_FAILED, am_filename, context->errors->count);
         return FALSE;
     }
 
@@ -160,14 +172,14 @@ static Boolean runPassOneStep(const char *as_filename, const char *am_filename,
 
 /**
  * Runs Pass Two and logs the outcome.
- * @param as_filename source .as path, for error messages
+ * @param am_filename expanded .am path
  * @param ob_filename path to write the object file to
  * @param ent_filename path to write entry symbols to, if any exist
  * @param ext_filename path to write external symbol usages to, if any exist
  * @param context the assembler context, fully populated by Pass One
  * @return TRUE if Pass Two completed with no errors, FALSE otherwise
  */
-static Boolean runPassTwoStep(const char *as_filename, const char *ob_filename,
+static Boolean runPassTwoStep(const char *am_filename, const char *ob_filename,
                                const char *ent_filename, const char *ext_filename,
                                AssemblerContext *context)
 {
@@ -179,8 +191,8 @@ static Boolean runPassTwoStep(const char *as_filename, const char *ob_filename,
     }
 
     if (errorListHasErrors(context->errors)) {
-        printErrors(as_filename, context->errors);
-        logMessage(LOG_ERROR, ERR_PASS_TWO_FAILED, as_filename, context->errors->count);
+        printErrors(am_filename, context->errors);
+        logMessage(LOG_ERROR, ERR_PASS_TWO_FAILED, am_filename, context->errors->count);
         return FALSE;
     }
 
@@ -220,6 +232,11 @@ static Boolean processFile(const char *as_filename)
         return FALSE;
     }
 
+    if (!canOpenForReading(as_filename)) {
+        logMessage(LOG_ERROR, ERR_INPUT_FILE_NOT_FOUND, as_filename);
+        return FALSE;
+    }
+
     context = createAssemblerContext();
     if (context == NULL) {
         logMessage(LOG_ERROR, ERR_FILE_OUT_OF_MEMORY, as_filename);
@@ -235,12 +252,12 @@ static Boolean processFile(const char *as_filename)
         return FALSE;
     }
 
-    logMessage(LOG_INFO, "Processing %s...\n", as_filename);
+    printFileHeader(as_filename);
     logMessage(LOG_DEBUG, "\nProcessing file: %s\n", as_filename);
 
     rc = runMacroExpansionStep(as_filename, am_filename, context) &&
-         runPassOneStep(as_filename, am_filename, context) &&
-         runPassTwoStep(as_filename, ob_filename, ent_filename, ext_filename, context);
+         runPassOneStep(am_filename, context) &&
+         runPassTwoStep(am_filename, ob_filename, ent_filename, ext_filename, context);
 
     destroyAssemblerContext(context);
     return rc;

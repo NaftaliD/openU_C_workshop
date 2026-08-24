@@ -152,6 +152,17 @@ Boolean isValidMacroName(const char *name)
     return isValidNameSyntax(name, TRUE);
 }
 
+Boolean canOpenForReading(const char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+
+    if (fp == NULL) {
+        return FALSE;
+    }
+    fclose(fp);
+    return TRUE;
+}
+
 char* duplicateString(const char *str)
 {
     char *copy;

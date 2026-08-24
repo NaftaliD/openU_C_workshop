@@ -1,8 +1,3 @@
-# Makefile for Two-Pass Assembler
-# Compiler: gcc with ANSI C90 compliance flags
-# Project: Open University 20465 - Systems Programming Laboratory
-# Author: Naftali Deutsch
-
 CC = gcc
 CFLAGS = -pedantic -ansi -Wall -std=c90 -g
 EXECUTABLE = assembler
